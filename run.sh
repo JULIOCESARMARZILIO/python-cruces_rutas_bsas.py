@@ -17,11 +17,12 @@ fi
 if [ -n "$GOOGLE_PLACES_KEY" ] && { [ "$FORZAR_PLANTAS" = "1" ] || [ ! -f "$DIR_SALIDA/plantas_sisa.csv" ]; }; then
   python plantas_sisa.py || echo "plantas_sisa.py terminó con error (se sigue igual)"
 fi
+python secuencias_rutas.py || true
 cd "$DIR_SALIDA"
 {
   echo '<!doctype html><meta charset="utf-8"><title>Cruces de rutas, silos y puertos</title>'
   echo '<body style="font-family:sans-serif;padding:2em"><h2>Cruces de rutas, silos y puertos</h2>'
-  echo '<p>CSV para Excel; GeoJSON para QGIS / Google Earth.</p><ul>'
+  echo '<p>CSV para Excel; GeoJSON para QGIS / Google Earth. <a href="rutas/">Secuencia de cruces por ruta</a>.</p><ul>'
   for f in plantas_sisa.csv plantas_sisa.geojson cruces_*.csv cruces_*.geojson tramos_*.csv red_rutas.json silos_puertos.csv silos_puertos.geojson silos_google.csv silos_google.geojson resumen.json; do
     [ -f "$f" ] && echo "<li><a href=\"$f\" download>$f</a></li>"
   done
