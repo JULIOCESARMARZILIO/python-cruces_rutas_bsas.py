@@ -119,7 +119,7 @@ def main():
                     time.sleep(PAUSA_S)
             except RuntimeError as e:
                 log(f"  {prov} / {loc}: {e}")
-                if "403" in str(e) or "PERMISSION" in str(e):
+                if any(c in str(e) for c in ("401", "403", "API keys are not supported", "PERMISSION")):
                     log("Clave sin permiso o API no habilitada; se detiene.")
                     return
                 continue

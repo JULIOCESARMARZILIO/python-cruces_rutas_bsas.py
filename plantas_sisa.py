@@ -203,10 +203,12 @@ def main():
                     res = buscar_planta(titular, loc, prov, centro)
                 except RuntimeError as e:
                     log(f"  {titular} / {loc}: {e}")
-                    if "403" in str(e):
-                        log("Clave sin permiso; se detiene.")
+                    if any(c in str(e) for c in ("401", "403", "API keys are not supported",
+                                                   "PERMISSION", "not enabled")):
+                        log("La clave de Google no sirve o la API no está habilitada; "
+                            "se detiene sin guardar nada.")
                         return
-                    res = []
+                    continue   # error transitorio: no se cachea, se reintenta en otra corrida
                 cache[clave] = {"places": res, "centro": centro}
                 fc.write(json.dumps({"clave": clave, "res": cache[clave]}, ensure_ascii=False) + "\n")
                 fc.flush()
