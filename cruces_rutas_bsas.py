@@ -25,7 +25,11 @@ from collections import defaultdict
 
 import requests
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+]
 AREA_BSAS = 3601632167  # relación OSM de la Provincia de Buenos Aires (1632167 + 3.6e9)
 RADIO_LOCALIDAD_KM = 5
 
@@ -57,12 +61,19 @@ out body;
 
 def overpass(query, reintentos=3):
     for i in range(reintentos):
-        r = requests.post(OVERPASS_URL, data={"data": query}, timeout=900)
-        if r.status_code == 200:
-            return r.json()
-        print(f"Overpass respondió {r.status_code}, reintento {i + 1}...")
+        for url in OVERPASS_URLS:
+            try:
+                print(f"Consultando {url} ...", flush=True)
+                r = requests.post(url, data={"data": query}, timeout=900)
+            except requests.RequestException as e:
+                print(f"  falló: {e}", flush=True)
+                continue
+            if r.status_code == 200:
+                return r.json()
+            print(f"  respondió {r.status_code}", flush=True)
+        print(f"Reintento {i + 1} en 30 s...", flush=True)
         time.sleep(30)
-    raise RuntimeError("No se pudo consultar Overpass")
+    raise RuntimeError("No se pudo consultar ningún servidor Overpass")
 
 
 def normalizar_ref(ref):
