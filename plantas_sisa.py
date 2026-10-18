@@ -105,15 +105,16 @@ class Red:
         import heapq
         dist, prev = {origen: 0.0}, {}
         conjunto = self.cruces if conjunto is None else conjunto
-        cola, hallados, descs = [(0.0, origen)], [], set()
+        cola, hallados = [(0.0, origen)], []
         while cola and len(hallados) < k:
             d, n = heapq.heappop(cola)
             if d > dist.get(n, 1e18) or d > max_km:
                 continue
             if n in conjunto and n != origen:
-                if self.desc.get(n) not in descs:   # misma intersección en calzada doble: una sola vez
+                la, lo = self.nodos[n]
+                # misma intersección repetida (calzada doble, rotonda): a menos de 400 m de una ya hallada
+                if all(haversine_km(la, lo, *self.nodos[h]) > 0.4 for h, _ in hallados):
                     hallados.append((n, d))
-                    descs.add(self.desc.get(n))
                 continue   # no se sigue expandiendo a través de un cruce hallado
             for m, km, _ in self.grafo[n]:
                 nd = d + km
