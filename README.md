@@ -1,17 +1,20 @@
-# Cruces de rutas - Provincia de Buenos Aires
+# Cruces de rutas, silos y puertos (OSM)
 
-Georreferencia todos los cruces de rutas nacionales/provinciales (RN/RP) de la
-Provincia de Buenos Aires, y los accesos a pueblos que empalman con ellas,
-usando datos de OpenStreetMap (API Overpass).
+Georreferencia todos los cruces de rutas nacionales/provinciales (RN/RP) y los
+accesos a pueblos que empalman con ellas, más plantas de silos/acopio y puertos,
+en Buenos Aires (sin el GBA, hasta la RP 6 inclusive), Santa Fe, Entre Ríos,
+Córdoba, La Pampa y Santiago del Estero. Procesa localmente el extracto de
+Argentina de Geofabrik con pyosmium (`procesar_osm.py`).
+`cruces_rutas_bsas_overpass.py` es la versión anterior vía API Overpass.
 
-Salida: `cruces_rutas_bsas.csv` y `cruces_rutas_bsas.geojson` con tipo de cruce,
-ruta, con qué se cruza, lat/lon, localidad cercana y link a Google Maps.
+Salida: `cruces_<provincia>.csv/.geojson` y `silos_puertos.csv/.geojson`.
 
 ## Uso local
     pip install -r requirements.txt
-    python cruces_rutas_bsas.py
+    python procesar_osm.py  # descarga el mapa (~300 MB) a /data; o pasar la ruta al .pbf
 
 ## Railway
-`run.sh` corre el script y luego sirve los resultados por HTTP en `$PORT`.
+`run.sh` usa el volumen `/data`, corre el procesador y sirve los resultados por HTTP en `$PORT`.
+Poner la variable `FORZAR=1` para recalcular.
 
 Datos © colaboradores de OpenStreetMap (ODbL).
