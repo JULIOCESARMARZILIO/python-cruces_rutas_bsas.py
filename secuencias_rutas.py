@@ -1,12 +1,21 @@
 """
-A partir de tramos_<provincia>.csv arma, por ruta, la secuencia ordenada de
-cruces a lo largo de la ruta con km acumulados: DIR_SALIDA/rutas/<prov>/<ruta>.csv
-y un índice rutas/index.html. No necesita reprocesar el mapa.
+Secuencia ordenada de cruces a lo largo de cada ruta, con km acumulados,
+calculada sobre la red ya guardada (red_rutas.json + cruces_*.csv):
+  DIR_SALIDA/rutas/<prov>/<ruta>.csv  e índice rutas/index.html
+No necesita reprocesar el mapa.
+
+Método: para cada ruta se toma su subgrafo (aristas con ese número), se
+condensa a "nodos clave" (cruces con otras rutas/accesos + empalmes donde la
+propia ruta se bifurca o termina), y se busca el recorrido más largo de punta
+a punta (doble barrido de Dijkstra). Ese es el segmento 1 (troncal); lo que
+queda afuera (ramales, calzadas paralelas) va en segmentos siguientes.
 """
 
 import csv
 import glob
+import heapq
 import html
+import json
 import os
 from collections import defaultdict
 
@@ -14,77 +23,140 @@ DIR_SALIDA = os.environ.get("DIR_SALIDA", "/data/salida")
 DIR_RUTAS = os.path.join(DIR_SALIDA, "rutas")
 
 
-def secuencias(tramos):
-    """tramos: lista de (a, b, km). Devuelve lista de cadenas [(nodo, km_acum), ...]."""
-    ady = defaultdict(list)
-    for a, b, km in tramos:
-        ady[a].append((b, km))
-        ady[b].append((a, km))
-    vistos, cadenas = set(), []
-    # arrancar por extremos (grado 1); luego lo que quede (anillos)
-    inicios = [n for n in ady if len(ady[n]) == 1] + list(ady)
-    for ini in inicios:
-        if ini in vistos:
+def log(m):
+    print(m, flush=True)
+
+
+def dijkstra(ady, origen):
+    dist, prev = {origen: 0.0}, {}
+    cola = [(0.0, origen)]
+    while cola:
+        d, n = heapq.heappop(cola)
+        if d > dist.get(n, 1e18):
             continue
-        cadena, acum, prev, actual = [(ini, 0.0)], 0.0, None, ini
-        vistos.add(ini)
-        while True:
-            sig = [(n, km) for n, km in ady[actual] if n != prev and n not in vistos]
-            if not sig:
-                break
-            n, km = sig[0]
-            acum += km
-            cadena.append((n, round(acum, 2)))
-            vistos.add(n)
-            prev, actual = actual, n
-        cadenas.append(cadena)
-    cadenas.sort(key=len, reverse=True)
-    return cadenas
+        for m, km in ady[n]:
+            nd = d + km
+            if nd < dist.get(m, 1e18):
+                dist[m], prev[m] = nd, n
+                heapq.heappush(cola, (nd, m))
+    return dist, prev
+
+
+def camino(prev, destino):
+    c = [destino]
+    while c[-1] in prev:
+        c.append(prev[c[-1]])
+    return c[::-1]
+
+
+def condensar(ady_ruta, claves):
+    """Grafo nodo-clave a nodo-clave caminando por nodos de paso (grado 2)."""
+    cond = defaultdict(list)
+    for c in claves:
+        for vecino, d0 in ady_ruta[c]:
+            prev, actual, acum = c, vecino, d0
+            while actual not in claves:
+                sig = [(n, d) for n, d in ady_ruta[actual] if n != prev]
+                if len(sig) != 1:
+                    break
+                prev, (actual, d) = actual, sig[0]
+                acum += d
+            if actual in claves and actual != c:
+                cond[c].append((actual, acum))
+    return cond
 
 
 def main():
-    os.makedirs(DIR_RUTAS, exist_ok=True)
-    indice = []
-    for ruta_csv in sorted(glob.glob(os.path.join(DIR_SALIDA, "tramos_*.csv"))):
-        prov = os.path.basename(ruta_csv)[len("tramos_"):-4]
-        por_ruta, desc, coords = defaultdict(list), {}, {}
+    red = json.load(open(os.path.join(DIR_SALIDA, "red_rutas.json"), encoding="utf-8"))
+    nodos = {int(k): v for k, v in red["nodos"].items()}
+    cruces = set(red["cruces"])
+    por_ruta = defaultdict(lambda: defaultdict(list))
+    for a, b, km, ruta in red["aristas"]:
+        por_ruta[ruta][a].append((b, km))
+        por_ruta[ruta][b].append((a, km))
+
+    desc, prov_de = {}, {}
+    for ruta_csv in glob.glob(os.path.join(DIR_SALIDA, "cruces_*.csv")):
+        prov = os.path.basename(ruta_csv)[len("cruces_"):-4]
         with open(ruta_csv, encoding="utf-8") as f:
             for r in csv.DictReader(f):
-                a, b = int(r["cruce_a"]), int(r["cruce_b"])
-                por_ruta[r["ruta"]].append((a, b, float(r["km"])))
-                desc[a], desc[b] = r["cruce_a_desc"], r["cruce_b_desc"]
-                coords[a] = (r["cruce_a_lat"], r["cruce_a_lon"])
-                coords[b] = (r["cruce_b_lat"], r["cruce_b_lon"])
-        os.makedirs(os.path.join(DIR_RUTAS, prov), exist_ok=True)
-        for ruta, tramos in sorted(por_ruta.items()):
+                n = int(r["nodo_osm"])
+                desc[n] = f"{r['ruta']} x {r['cruza_con']}"
+                prov_de[n] = prov
+
+    indice = []
+    for ruta, ady in sorted(por_ruta.items()):
+        claves = {n for n in ady if n in cruces or len(ady[n]) != 2}
+        if not claves:
+            continue
+        cond = condensar(ady, claves)
+        # provincia(s) de la ruta según sus cruces
+        provs = defaultdict(int)
+        for n in claves:
+            if n in prov_de:
+                provs[prov_de[n]] += 1
+        if not provs:
+            continue
+        filas, restantes, seg = [], set(cond), 0
+        while restantes:
+            seg += 1
+            ini = next(iter(restantes))
+            sub = {n: [(m, km) for m, km in cond[n] if m in restantes] for n in restantes}
+            d1, _ = dijkstra(sub, ini)
+            lejos = max(d1, key=d1.get)
+            d2, prev = dijkstra(sub, lejos)
+            fin = max(d2, key=d2.get)
+            ruta_nodos = camino(prev, fin)
+            # orientar de sur a norte / oeste a este (lat menor primero)
+            if nodos[ruta_nodos[0]][0] > nodos[ruta_nodos[-1]][0]:
+                ruta_nodos = ruta_nodos[::-1]
+            acum, prev_km, orden = 0.0, 0.0, 0
+            for i, n in enumerate(ruta_nodos):
+                if i:
+                    acum += next(km for m, km in sub[ruta_nodos[i - 1]] if m == n)
+                es_cruce = n in cruces
+                if seg > 1 and len(ruta_nodos) == 1:
+                    break
+                orden += 1
+                la, lo = nodos[n]
+                filas.append([seg, orden, round(acum, 2), round(acum - prev_km, 2),
+                              "cruce" if es_cruce else "empalme",
+                              desc.get(n, f"empalme/bifurcación de {ruta}"),
+                              la, lo, n, f"https://www.google.com/maps?q={la},{lo}"])
+                prev_km = acum
+            restantes -= set(ruta_nodos)
+            if seg >= 40:
+                break
+        for prov in provs:
+            os.makedirs(os.path.join(DIR_RUTAS, prov), exist_ok=True)
             nombre = ruta.replace(" ", "_") + ".csv"
             with open(os.path.join(DIR_RUTAS, prov, nombre), "w", newline="", encoding="utf-8") as f:
                 w = csv.writer(f)
-                w.writerow(["segmento", "orden", "km_acum", "km_desde_anterior", "cruce",
-                            "lat", "lon", "nodo_osm", "google_maps"])
-                for s, cadena in enumerate(secuencias(tramos), 1):
-                    prev_km = 0.0
-                    for i, (n, km) in enumerate(cadena, 1):
-                        la, lo = coords[n]
-                        w.writerow([s, i, km, round(km - prev_km, 2), desc[n], la, lo, n,
-                                    f"https://www.google.com/maps?q={la},{lo}"])
-                        prev_km = km
-            total = sum(km for _, _, km in tramos)
-            indice.append((prov, ruta, nombre, len(tramos), round(total, 1)))
+                w.writerow(["segmento", "orden", "km_acum", "km_desde_anterior", "tipo",
+                            "cruce", "lat", "lon", "nodo_osm", "google_maps"])
+                w.writerows(filas)
+            troncal = [r for r in filas if r[0] == 1]
+            indice.append((prov, ruta, nombre, len(troncal),
+                           troncal[-1][2] if troncal else 0, seg))
+
+    indice.sort()
     with open(os.path.join(DIR_RUTAS, "index.html"), "w", encoding="utf-8") as f:
         f.write('<!doctype html><meta charset="utf-8"><title>Rutas</title>'
-                '<body style="font-family:sans-serif;padding:2em"><h2>Secuencia de cruces por ruta</h2>')
+                '<body style="font-family:sans-serif;padding:2em">'
+                '<h2>Secuencia de cruces por ruta</h2>'
+                '<p>Segmento 1 = recorrido troncal; el resto son ramales o tramos sueltos. '
+                'Filas "empalme" son bifurcaciones de la propia ruta (calzada doble, rotondas).</p>')
         prov_actual = None
-        for prov, ruta, nombre, n, total in indice:
+        for prov, ruta, nombre, n, km, segs in indice:
             if prov != prov_actual:
                 if prov_actual:
                     f.write("</ul>")
                 f.write(f"<h3>{html.escape(prov)}</h3><ul>")
                 prov_actual = prov
             f.write(f'<li><a href="{prov}/{nombre}">{html.escape(ruta)}</a> '
-                    f'({n} tramos, {total} km)</li>')
+                    f'(troncal: {n} nodos, {km} km; {segs} segmentos)</li>')
         f.write("</ul></body>")
-    print(f"Secuencias por ruta: {len(indice)} rutas", flush=True)
+    log(f"Secuencias por ruta: {len(indice)} archivos")
 
 
 if __name__ == "__main__":
