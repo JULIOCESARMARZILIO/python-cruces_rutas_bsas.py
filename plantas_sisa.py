@@ -71,12 +71,16 @@ class Red:
         for a, b, km, ruta in d["aristas"]:
             self.grafo[a].append((b, km, ruta))
             self.grafo[b].append((a, km, ruta))
-        self.cruces = set(d["cruces"])
-        self.desc = {}
+        self.desc, self.cruces, self.cruces_rr = {}, set(), set()
         for ruta_csv in cruces_csv:
             with open(ruta_csv, encoding="utf-8") as f:
                 for r in csv.DictReader(f):
-                    self.desc[int(r["nodo_osm"])] = f"{r['ruta']} x {r['cruza_con']}"
+                    n = int(r["nodo_osm"])
+                    self.desc[n] = f"{r['ruta']} x {r['cruza_con']}"
+                    if r["tipo"] == "ruta-ruta":
+                        self.cruces_rr.add(n)
+                    if r["tipo"] in ("ruta-ruta", "acceso"):   # los urbanos (calles) no cuentan
+                        self.cruces.add(n)
         # índice por grilla de 0.05° (~5 km)
         self.grilla = defaultdict(list)
         for nid, (la, lo) in self.nodos.items():
@@ -95,19 +99,21 @@ class Red:
                         mejor, dmin = nid, d
         return mejor, dmin
 
-    def cruces_cercanos(self, origen, k=2, max_km=80.0):
+    def cruces_cercanos(self, origen, k=2, max_km=150.0, conjunto=None):
         """Los k cruces más cercanos por la red, en direcciones distintas: el 2º no
         puede alcanzarse pasando por el 1º (y así sucesivamente)."""
         import heapq
         dist, prev = {origen: 0.0}, {}
-        cola, hallados, bloqueados = [(0.0, origen)], [], set()
+        conjunto = self.cruces if conjunto is None else conjunto
+        cola, hallados, descs = [(0.0, origen)], [], set()
         while cola and len(hallados) < k:
             d, n = heapq.heappop(cola)
             if d > dist.get(n, 1e18) or d > max_km:
                 continue
-            if n in self.cruces and n != origen and n not in bloqueados:
-                hallados.append((n, d))
-                bloqueados.add(n)
+            if n in conjunto and n != origen:
+                if self.desc.get(n) not in descs:   # misma intersección en calzada doble: una sola vez
+                    hallados.append((n, d))
+                    descs.add(self.desc.get(n))
                 continue   # no se sigue expandiendo a través de un cruce hallado
             for m, km, _ in self.grafo[n]:
                 nd = d + km
@@ -123,17 +129,14 @@ class Red:
         rutas = sorted({x for _, _, r in self.grafo[nid] for x in r.split(";")})
         out = {"ruta": " / ".join(rutas), "dist_a_ruta_km": round(d_ruta, 2),
                "nodo_ruta": nid}
-        if nid in self.cruces:
-            out.update({"cruce_1": nid, "cruce_1_desc": self.desc.get(nid, ""), "cruce_1_km": 0.0})
-            otros = self.cruces_cercanos(nid, k=1)
-            if otros:
-                c, km = otros[0]
-                out.update({"cruce_2": c, "cruce_2_desc": self.desc.get(c, ""), "cruce_2_km": round(km, 2)})
-            return out
         for k, (c, km) in enumerate(self.cruces_cercanos(nid, k=2), 1):
             out[f"cruce_{k}"] = c
             out[f"cruce_{k}_desc"] = self.desc.get(c, "")
             out[f"cruce_{k}_km"] = round(km, 2)
+        for k, (c, km) in enumerate(self.cruces_cercanos(nid, k=2, conjunto=self.cruces_rr), 1):
+            out[f"rr_{k}"] = c
+            out[f"rr_{k}_desc"] = self.desc.get(c, "")
+            out[f"rr_{k}_km"] = round(km, 2)
         return out
 
 
@@ -247,7 +250,7 @@ def main():
                     "lat": lat, "lon": lon, "place_id": cand.get("id", ""),
                     "similitud_nombre": round(sim, 2),
                     "dist_localidad_km": round(d_loc, 1) if d_loc is not None else "",
-                    "confianza": ("alta" if sim >= 0.75 and (d_loc is None or d_loc <= 30)
+                    "confianza": ("alta" if sim >= 0.75 and d_loc is not None and d_loc <= 30
                                   else "media" if sim >= 0.45 else "baja"),
                     "google_maps": f"https://www.google.com/maps/place/?q=place_id:{cand.get('id', '')}",
                 })
@@ -262,7 +265,8 @@ def main():
               "confianza", "nombre_google", "direccion_google", "lat", "lon",
               "similitud_nombre", "dist_localidad_km", "ruta", "dist_a_ruta_km",
               "cruce_1_desc", "cruce_1_km", "cruce_2_desc", "cruce_2_km",
-              "cruce_1", "cruce_2", "nodo_ruta", "place_id", "google_maps"]
+              "rr_1_desc", "rr_1_km", "rr_2_desc", "rr_2_km",
+              "cruce_1", "cruce_2", "rr_1", "rr_2", "nodo_ruta", "place_id", "google_maps"]
     with open(os.path.join(DIR_SALIDA, "plantas_sisa.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=campos, extrasaction="ignore")
         w.writeheader()
