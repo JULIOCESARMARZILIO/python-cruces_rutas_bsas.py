@@ -71,9 +71,10 @@ def main():
     nodos = {int(k): v for k, v in red["nodos"].items()}
     cruces = set(red["cruces"])
     por_ruta = defaultdict(lambda: defaultdict(list))
-    for a, b, km, ruta in red["aristas"]:
-        por_ruta[ruta][a].append((b, km))
-        por_ruta[ruta][b].append((a, km))
+    for a, b, km, etiqueta in red["aristas"]:
+        for ruta in etiqueta.split(";"):   # tramos compartidos pertenecen a ambas rutas
+            por_ruta[ruta][a].append((b, km))
+            por_ruta[ruta][b].append((a, km))
 
     desc, prov_de = {}, {}
     for ruta_csv in glob.glob(os.path.join(DIR_SALIDA, "cruces_*.csv")):

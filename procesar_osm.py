@@ -149,6 +149,7 @@ class Vias(osmium.SimpleHandler):
         super().__init__()
         self.nodos = {}                          # nid -> (lat, lon) (solo los que importan)
         self.rutas_por_nodo = defaultdict(set)   # nid -> {'RN 5', ...}
+        self.combos_por_nodo = defaultdict(set)  # nid -> {frozenset(refs de cada vía)}
         self.accesos_por_nodo = defaultdict(set)  # nid -> {'Acceso a X', ...}
         self.localidades = []                    # (nombre, lat, lon)
         self.pois = []                           # silos y puertos
@@ -196,6 +197,7 @@ class Vias(osmium.SimpleHandler):
                     if nr.location.valid():
                         self.nodos[nr.ref] = (nr.location.lat, nr.location.lon)
                         self.rutas_por_nodo[nr.ref] |= refs
+                        self.combos_por_nodo[nr.ref].add(frozenset(refs))
                         nids.append(nr.ref)
                 if len(nids) >= 2:
                     self.vias_ruta.append((refs, nids))
@@ -290,7 +292,8 @@ def main():
     por_prov = defaultdict(list)
     for nid, refs in v.rutas_por_nodo.items():
         accs = v.accesos_por_nodo.get(nid, set())
-        if len(refs) < 2 and not accs:
+        es_cruce_rutas = len(refs) >= 2 and len(v.combos_por_nodo[nid]) >= 2
+        if not es_cruce_rutas and not accs:
             continue
         lat, lon = v.nodos[nid]
         prov = provincia_de(lat, lon)
@@ -302,7 +305,7 @@ def main():
         refs_o = sorted(refs)
         loc, dist = localidad_cercana(lat, lon)
         por_prov[prov].append({
-            "tipo": "ruta-ruta" if len(refs) >= 2 else "acceso",
+            "tipo": "ruta-ruta" if es_cruce_rutas else "acceso",
             "ruta": refs_o[0],
             "cruza_con": " ; ".join(refs_o[1:] + sorted(accs)),
             "lat": lat, "lon": lon,
@@ -347,7 +350,7 @@ def main():
     # solo cruces. Grafo: nid -> [(vecino, km, ruta)]
     grafo = defaultdict(list)
     for refs, nids in v.vias_ruta:
-        ruta = sorted(refs)[0]
+        ruta = ";".join(sorted(refs))
         for a, b in zip(nids, nids[1:]):
             la, lo = v.nodos[a]
             lb, lob = v.nodos[b]

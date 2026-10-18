@@ -112,7 +112,7 @@ class Red:
         nid, d_ruta = self.nodo_mas_cercano(lat, lon, MAX_KM_RUTA)
         if nid is None:
             return None
-        rutas = sorted({r for _, _, r in self.grafo[nid]})
+        rutas = sorted({x for _, _, r in self.grafo[nid] for x in r.split(";")})
         out = {"ruta": " / ".join(rutas), "dist_a_ruta_km": round(d_ruta, 2),
                "nodo_ruta": nid}
         if nid in self.cruces:
