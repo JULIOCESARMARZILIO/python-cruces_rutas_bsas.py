@@ -28,6 +28,7 @@ import requests
 
 DIR_SALIDA = os.environ.get("DIR_SALIDA", "/data/salida")
 PADRON = os.environ.get("PADRON_SISA", "datos/padron_sisa.xlsx")
+VERIFICADAS = os.environ.get("PLANTAS_VERIFICADAS", "datos/plantas_verificadas.csv")
 KEY = os.environ.get("GOOGLE_PLACES_KEY", "")
 URL = "https://places.googleapis.com/v1/places:searchText"
 CAMPOS = "places.id,places.displayName,places.formattedAddress,places.location,places.types"
@@ -191,6 +192,14 @@ def main():
     plantas = [dict(zip(hdr, r)) for r in filas[1:] if r and r[0]]
     log(f"Plantas en el padrón: {len(plantas)}")
 
+    verificadas = {}
+    if os.path.exists(VERIFICADAS):
+        with open(VERIFICADAS, encoding="utf-8") as f:
+            for r in csv.DictReader(f):
+                if r.get("lat") and r.get("lon"):
+                    verificadas[str(r["n_planta"]).strip()] = (float(r["lat"]), float(r["lon"]),
+                                                               r.get("nota", ""))
+    log(f"Ubicaciones verificadas a mano: {len(verificadas)}")
     centros = centros_localidades()
     red = Red(os.path.join(DIR_SALIDA, "red_rutas.json"),
               [os.path.join(DIR_SALIDA, f"cruces_{s}.csv") for s in PROVINCIAS.values()
@@ -232,6 +241,16 @@ def main():
             fila = {"n_planta": p.get("N° de planta"), "cuit": p.get("CUIT del titular"),
                     "titular": titular, "localidad": loc, "provincia": prov,
                     "actividades": p.get("Actividades", "")}
+            if str(p.get("N° de planta")).strip() in verificadas:
+                lat, lon, nota = verificadas[str(p.get("N° de planta")).strip()]
+                fila.update({"lat": lat, "lon": lon, "confianza": "verificada",
+                             "nombre_google": nota or "ubicación cargada a mano",
+                             "google_maps": f"https://www.google.com/maps?q={lat},{lon}"})
+                eng = red.enganchar(lat, lon)
+                if eng:
+                    fila.update(eng)
+                salida.append(fila)
+                continue
             elegido, mejor_score = None, 0
             for cand in res:
                 nombre = cand.get("displayName", {}).get("text", "")
