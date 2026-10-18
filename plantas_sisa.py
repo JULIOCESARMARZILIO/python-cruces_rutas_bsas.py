@@ -129,8 +129,10 @@ class Red:
         if nid is None:
             return None
         rutas = sorted({x for _, _, r in self.grafo[nid] for x in r.split(";")})
+        rla, rlo = self.nodos[nid]
         out = {"ruta": " / ".join(rutas), "dist_a_ruta_km": round(d_ruta, 2),
-               "nodo_ruta": nid}
+               "nodo_ruta": nid, "ruta_lat": rla, "ruta_lon": rlo,
+               "ruta_maps": f"https://www.google.com/maps?q={rla},{rlo}"}
         for k, (c, km) in enumerate(self.cruces_cercanos(nid, k=2), 1):
             out[f"cruce_{k}"] = c
             out[f"cruce_{k}_desc"] = self.desc.get(c, "")
@@ -286,6 +288,7 @@ def main():
               "similitud_nombre", "dist_localidad_km", "ruta", "dist_a_ruta_km",
               "cruce_1_desc", "cruce_1_km", "cruce_2_desc", "cruce_2_km",
               "rr_1_desc", "rr_1_km", "rr_2_desc", "rr_2_km",
+              "ruta_lat", "ruta_lon", "ruta_maps",
               "cruce_1", "cruce_2", "rr_1", "rr_2", "nodo_ruta", "place_id", "google_maps"]
     with open(os.path.join(DIR_SALIDA, "plantas_sisa.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=campos, extrasaction="ignore")
