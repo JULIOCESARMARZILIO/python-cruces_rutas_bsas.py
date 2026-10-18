@@ -304,8 +304,15 @@ def main():
             continue
         refs_o = sorted(refs)
         loc, dist = localidad_cercana(lat, lon)
+        if es_cruce_rutas:
+            tipo = "ruta-ruta"
+        else:
+            nombres = " ; ".join(sorted(accs)).lower()
+            urbano = any(nombres.startswith(p) or f"; {p}" in nombres
+                         for p in ("avenida ", "av. ", "calle ", "boulevard ", "bulevar ", "pasaje ", "diagonal "))
+            tipo = "urbano" if urbano else "acceso"
         por_prov[prov].append({
-            "tipo": "ruta-ruta" if es_cruce_rutas else "acceso",
+            "tipo": tipo,
             "ruta": refs_o[0],
             "cruza_con": " ; ".join(refs_o[1:] + sorted(accs)),
             "lat": lat, "lon": lon,
@@ -321,7 +328,8 @@ def main():
         filas.sort(key=lambda r: (r["tipo"], r["ruta"], r["cruza_con"]))
         escribir("cruces_" + PROVINCIAS[prov], filas, campos)
         resumen[prov] = {"ruta-ruta": sum(r["tipo"] == "ruta-ruta" for r in filas),
-                         "accesos": sum(r["tipo"] == "acceso" for r in filas)}
+                         "accesos": sum(r["tipo"] == "acceso" for r in filas),
+                         "urbanos": sum(r["tipo"] == "urbano" for r in filas)}
         log(f"  {prov}: {resumen[prov]}")
 
     # --- silos y puertos

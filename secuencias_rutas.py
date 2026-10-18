@@ -91,44 +91,55 @@ def main():
         if not claves:
             continue
         cond = condensar(ady, claves)
-        # provincia(s) de la ruta según sus cruces
-        provs = defaultdict(int)
-        for n in claves:
-            if n in prov_de:
-                provs[prov_de[n]] += 1
-        if not provs:
-            continue
-        filas, restantes, seg = [], set(cond), 0
-        while restantes:
-            seg += 1
-            ini = next(iter(restantes))
-            sub = {n: [(m, km) for m, km in cond[n] if m in restantes] for n in restantes}
-            d1, _ = dijkstra(sub, ini)
-            lejos = max(d1, key=d1.get)
-            d2, prev = dijkstra(sub, lejos)
-            fin = max(d2, key=d2.get)
-            ruta_nodos = camino(prev, fin)
-            # orientar de sur a norte / oeste a este (lat menor primero)
-            if nodos[ruta_nodos[0]][0] > nodos[ruta_nodos[-1]][0]:
-                ruta_nodos = ruta_nodos[::-1]
-            acum, prev_km, orden = 0.0, 0.0, 0
-            for i, n in enumerate(ruta_nodos):
-                if i:
-                    acum += next(km for m, km in sub[ruta_nodos[i - 1]] if m == n)
-                es_cruce = n in cruces
-                if seg > 1 and len(ruta_nodos) == 1:
+        # componentes conexas del grafo condensado -> provincia por mayoría de sus cruces
+        comp_de, comps = {}, []
+        for n in cond:
+            if n in comp_de:
+                continue
+            pila, comp = [n], set()
+            comp_de[n] = len(comps)
+            while pila:
+                x = pila.pop()
+                comp.add(x)
+                for m, _ in cond[x]:
+                    if m not in comp_de:
+                        comp_de[m] = len(comps)
+                        pila.append(m)
+            comps.append(comp)
+        por_prov_nodos = defaultdict(set)
+        for comp in comps:
+            votos = defaultdict(int)
+            for n in comp:
+                if n in prov_de:
+                    votos[prov_de[n]] += 1
+            if votos:
+                por_prov_nodos[max(votos, key=votos.get)] |= comp
+        for prov, nodos_prov in por_prov_nodos.items():
+            filas, restantes, seg = [], set(nodos_prov), 0
+            while restantes:
+                seg += 1
+                ini = next(iter(restantes))
+                sub = {n: [(m, km) for m, km in cond[n] if m in restantes] for n in restantes}
+                d1, _ = dijkstra(sub, ini)
+                lejos = max(d1, key=d1.get)
+                d2, prev = dijkstra(sub, lejos)
+                fin = max(d2, key=d2.get)
+                ruta_nodos = camino(prev, fin)
+                if nodos[ruta_nodos[0]][0] > nodos[ruta_nodos[-1]][0]:
+                    ruta_nodos = ruta_nodos[::-1]
+                acum, prev_km = 0.0, 0.0
+                for i, n in enumerate(ruta_nodos):
+                    if i:
+                        acum += next(km for m, km in sub[ruta_nodos[i - 1]] if m == n)
+                    la, lo = nodos[n]
+                    filas.append([seg, i + 1, round(acum, 2), round(acum - prev_km, 2),
+                                  "cruce" if n in cruces else "empalme",
+                                  desc.get(n, f"empalme/bifurcación de {ruta}"),
+                                  la, lo, n, f"https://www.google.com/maps?q={la},{lo}"])
+                    prev_km = acum
+                restantes -= set(ruta_nodos)
+                if seg >= 40:
                     break
-                orden += 1
-                la, lo = nodos[n]
-                filas.append([seg, orden, round(acum, 2), round(acum - prev_km, 2),
-                              "cruce" if es_cruce else "empalme",
-                              desc.get(n, f"empalme/bifurcación de {ruta}"),
-                              la, lo, n, f"https://www.google.com/maps?q={la},{lo}"])
-                prev_km = acum
-            restantes -= set(ruta_nodos)
-            if seg >= 40:
-                break
-        for prov in provs:
             os.makedirs(os.path.join(DIR_RUTAS, prov), exist_ok=True)
             nombre = ruta.replace(" ", "_") + ".csv"
             with open(os.path.join(DIR_RUTAS, prov, nombre), "w", newline="", encoding="utf-8") as f:

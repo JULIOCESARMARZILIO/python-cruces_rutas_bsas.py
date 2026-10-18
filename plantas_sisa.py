@@ -95,18 +95,26 @@ class Red:
                         mejor, dmin = nid, d
         return mejor, dmin
 
-    def primer_cruce(self, desde, hacia, km0):
-        """Camina desde 'desde' por 'hacia' hasta el primer cruce; (nid, km) o (None, km)."""
-        prev, actual, acum = desde, hacia, km0
-        for _ in range(200000):
-            if actual in self.cruces:
-                return actual, acum
-            sig = [(n, d) for n, d, _ in self.grafo[actual] if n != prev]
-            if len(sig) != 1:
-                return None, acum
-            prev, (actual, d) = actual, sig[0]
-            acum += d
-        return None, acum
+    def cruces_cercanos(self, origen, k=2, max_km=80.0):
+        """Los k cruces más cercanos por la red, en direcciones distintas: el 2º no
+        puede alcanzarse pasando por el 1º (y así sucesivamente)."""
+        import heapq
+        dist, prev = {origen: 0.0}, {}
+        cola, hallados, bloqueados = [(0.0, origen)], [], set()
+        while cola and len(hallados) < k:
+            d, n = heapq.heappop(cola)
+            if d > dist.get(n, 1e18) or d > max_km:
+                continue
+            if n in self.cruces and n != origen and n not in bloqueados:
+                hallados.append((n, d))
+                bloqueados.add(n)
+                continue   # no se sigue expandiendo a través de un cruce hallado
+            for m, km, _ in self.grafo[n]:
+                nd = d + km
+                if nd < dist.get(m, 1e18):
+                    dist[m], prev[m] = nd, n
+                    heapq.heappush(cola, (nd, m))
+        return hallados
 
     def enganchar(self, lat, lon):
         nid, d_ruta = self.nodo_mas_cercano(lat, lon, MAX_KM_RUTA)
@@ -116,15 +124,15 @@ class Red:
         out = {"ruta": " / ".join(rutas), "dist_a_ruta_km": round(d_ruta, 2),
                "nodo_ruta": nid}
         if nid in self.cruces:
-            out["cruce_1"] = nid
-            out["cruce_1_desc"] = self.desc.get(nid, "")
-            out["cruce_1_km"] = 0.0
+            out.update({"cruce_1": nid, "cruce_1_desc": self.desc.get(nid, ""), "cruce_1_km": 0.0})
+            otros = self.cruces_cercanos(nid, k=1)
+            if otros:
+                c, km = otros[0]
+                out.update({"cruce_2": c, "cruce_2_desc": self.desc.get(c, ""), "cruce_2_km": round(km, 2)})
             return out
-        vecinos = self.grafo[nid][:2]
-        for k, (vec, d, _) in enumerate(vecinos, 1):
-            c, km = self.primer_cruce(nid, vec, d)
-            out[f"cruce_{k}"] = c or ""
-            out[f"cruce_{k}_desc"] = self.desc.get(c, "fin de ruta sin cruce") if c else "fin de ruta sin cruce"
+        for k, (c, km) in enumerate(self.cruces_cercanos(nid, k=2), 1):
+            out[f"cruce_{k}"] = c
+            out[f"cruce_{k}_desc"] = self.desc.get(c, "")
             out[f"cruce_{k}_km"] = round(km, 2)
         return out
 
