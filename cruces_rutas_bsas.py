@@ -37,7 +37,7 @@ RADIO_LOCALIDAD_KM = 5
 LAT_MIN, LAT_MAX = -41.1, -33.2
 LON_MIN, LON_MAX = -63.5, -56.6
 FILAS, COLS = 16, 13   # 208 celdas de ~0.5° x ~0.53°
-PAUSA_ENTRE_CELDAS = 1  # segundos
+PAUSA_ENTRE_CELDAS = 3  # segundos
 
 # Rutas numeradas + cualquier camino (sin número) que toque esas rutas,
 # dentro de una celda (bbox) y de la provincia
@@ -90,19 +90,24 @@ out body;
 """
 
 
-def overpass(query, reintentos=3):
+HEADERS = {"User-Agent": "cruces-rutas-bsas/1.0 (proyecto de georreferenciacion; contacto via GitHub JULIOCESARMARZILIO)"}
+
+
+def overpass(query, reintentos=4):
+    espera = 30
     for i in range(reintentos):
         for url in OVERPASS_URLS:
             try:
-                r = requests.post(url, data={"data": query}, timeout=900)
+                r = requests.post(url, data={"data": query}, headers=HEADERS, timeout=900)
             except requests.RequestException as e:
-                print(f"  falló: {e}", flush=True)
+                print(f"  {url}: falló ({e.__class__.__name__})", flush=True)
                 continue
             if r.status_code == 200:
                 return r.json()
-            print(f"  respondió {r.status_code}", flush=True)
-        print(f"Reintento {i + 1} en 30 s...", flush=True)
-        time.sleep(30)
+            print(f"  {url}: respondió {r.status_code}: {r.text[:300].strip()!r}", flush=True)
+        print(f"Reintento {i + 1} en {espera} s...", flush=True)
+        time.sleep(espera)
+        espera = min(espera * 2, 240)
     raise RuntimeError("No se pudo consultar ningún servidor Overpass")
 
 
