@@ -152,6 +152,7 @@ class Vias(osmium.SimpleHandler):
         self.accesos_por_nodo = defaultdict(set)  # nid -> {'Acceso a X', ...}
         self.localidades = []                    # (nombre, lat, lon)
         self.pois = []                           # silos y puertos
+        self.vias_ruta = []                      # (refs, [nid, ...]) de rutas RN/RP
         self.n_ways = 0
 
     # --- nodos: localidades y POIs puntuales
@@ -190,10 +191,14 @@ class Vias(osmium.SimpleHandler):
         if hw:
             refs = normalizar_ref(t.get("ref"))
             if refs:
+                nids = []
                 for nr in nl:
                     if nr.location.valid():
                         self.nodos[nr.ref] = (nr.location.lat, nr.location.lon)
                         self.rutas_por_nodo[nr.ref] |= refs
+                        nids.append(nr.ref)
+                if len(nids) >= 2:
+                    self.vias_ruta.append((refs, nids))
                 return
             nombre = t.get("name", "")
             es_acceso = hw in CLASES_ACCESO or (
@@ -334,6 +339,70 @@ def main():
     resumen["silos_puertos"] = {"silos/acopio": sum(p["categoria"] == "silos/acopio" for p in pois),
                                 "puertos": sum(p["categoria"] == "puerto" for p in pois)}
     log(f"  {resumen['silos_puertos']}")
+
+    # --- red vial: aristas nodo-nodo de las rutas y tramos cruce-a-cruce
+    log("Red de rutas y tramos entre cruces...")
+    cruces_ids = {r["nodo_osm"] for filas in por_prov.values() for r in filas}
+    # localidades también como nodos de la red (punto de ruta más cercano) no;
+    # solo cruces. Grafo: nid -> [(vecino, km, ruta)]
+    grafo = defaultdict(list)
+    for refs, nids in v.vias_ruta:
+        ruta = sorted(refs)[0]
+        for a, b in zip(nids, nids[1:]):
+            la, lo = v.nodos[a]
+            lb, lob = v.nodos[b]
+            d = haversine_km(la, lo, lb, lob)
+            grafo[a].append((b, d, ruta))
+            grafo[b].append((a, d, ruta))
+    # guardar la red cruda (para el cálculo de plantas) en JSON compacto
+    with open(os.path.join(DIR_SALIDA, "red_rutas.json"), "w", encoding="utf-8") as f:
+        json.dump({"nodos": {str(k): [round(a, 7), round(b, 7)] for k, (a, b) in v.nodos.items()
+                             if k in grafo},
+                   "aristas": [[a, b, round(d, 4), r] for a, lst in grafo.items()
+                               for b, d, r in lst if a < b],
+                   "cruces": sorted(cruces_ids)}, f, ensure_ascii=False)
+
+    # tramos: desde cada cruce, caminar por nodos no-cruce hasta el próximo cruce
+    tramos, vistos_tramos = [], set()
+    for c in cruces_ids:
+        for vecino, d0, ruta in grafo.get(c, []):
+            prev, actual, acum, pasos = c, vecino, d0, 1
+            while actual not in cruces_ids:
+                sig = [(n, d, r) for n, d, r in grafo[actual] if n != prev]
+                if len(sig) != 1:   # fin de ruta o bifurcación sin cruce: cortar
+                    break
+                prev, (actual, d, r) = actual, sig[0]
+                acum += d
+                pasos += 1
+                if pasos > 100000:
+                    break
+            if actual in cruces_ids and actual != c:
+                clave = (min(c, actual), max(c, actual), ruta)
+                if clave not in vistos_tramos:
+                    vistos_tramos.add(clave)
+                    tramos.append((c, actual, ruta, round(acum, 3)))
+    info_cruce = {r["nodo_osm"]: (prov, r) for prov, filas in por_prov.items() for r in filas}
+    tramos_prov = defaultdict(list)
+    for a, b, ruta, km in tramos:
+        pa, ra = info_cruce[a]
+        pb, rb = info_cruce[b]
+        tramos_prov[pa].append({
+            "ruta": ruta, "km": km,
+            "cruce_a": a, "cruce_a_desc": f"{ra['ruta']} x {ra['cruza_con']}",
+            "cruce_a_lat": ra["lat"], "cruce_a_lon": ra["lon"],
+            "cruce_b": b, "cruce_b_desc": f"{rb['ruta']} x {rb['cruza_con']}",
+            "cruce_b_lat": rb["lat"], "cruce_b_lon": rb["lon"],
+            "provincia_b": pb,
+        })
+    for prov, filas in tramos_prov.items():
+        filas.sort(key=lambda r: (r["ruta"], r["cruce_a"]))
+        with open(os.path.join(DIR_SALIDA, "tramos_" + PROVINCIAS[prov] + ".csv"), "w",
+                  newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=list(filas[0].keys()))
+            w.writeheader()
+            w.writerows(filas)
+        resumen[prov]["tramos"] = len(filas)
+        log(f"  {prov}: {len(filas)} tramos")
 
     with open(os.path.join(DIR_SALIDA, "resumen.json"), "w", encoding="utf-8") as f:
         json.dump(resumen, f, ensure_ascii=False, indent=1)
