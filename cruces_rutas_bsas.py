@@ -33,9 +33,17 @@ OVERPASS_URLS = [
 AREA_BSAS = 3601632167  # relación OSM de la Provincia de Buenos Aires (1632167 + 3.6e9)
 RADIO_LOCALIDAD_KM = 5
 
-# Rutas numeradas + cualquier camino (sin número) que toque esas rutas
-QUERY_RUTAS = f"""
-[out:json][timeout:900];
+# Bounding box de la provincia y grilla (~200 celdas) para no pedir todo junto
+LAT_MIN, LAT_MAX = -41.1, -33.2
+LON_MIN, LON_MAX = -63.5, -56.6
+FILAS, COLS = 16, 13   # 208 celdas de ~0.5° x ~0.53°
+PAUSA_ENTRE_CELDAS = 1  # segundos
+
+# Rutas numeradas + cualquier camino (sin número) que toque esas rutas,
+# dentro de una celda (bbox) y de la provincia
+def query_rutas(s, w, n, e):
+    return f"""
+[out:json][timeout:300][bbox:{s},{w},{n},{e}];
 area({AREA_BSAS})->.bsas;
 way["highway"]["ref"~"^(RN|RP)\\s?[0-9]+"](area.bsas)->.rutas;
 way(around.rutas:0)["highway"~"^(primary|secondary|tertiary|unclassified|residential|track)$"](area.bsas)->.acc;
@@ -44,6 +52,29 @@ out body;
 >;
 out skel qt;
 """
+
+# Gran Buenos Aires: se excluye todo lo que queda adentro del anillo de la
+# RP 6 (polígono aproximado lon,lat), salvo los cruces sobre la propia RP 6.
+POLIGONO_GBA = [
+    (-59.03, -34.09), (-58.95, -34.17), (-58.96, -34.36), (-58.99, -34.50),
+    (-58.96, -34.63), (-58.89, -34.79), (-58.76, -35.06), (-58.43, -35.04),
+    (-58.19, -35.16), (-57.97, -34.96), (-57.84, -34.84), (-58.05, -34.72),
+    (-58.33, -34.57), (-58.56, -34.40), (-58.75, -34.30), (-58.90, -34.20),
+]
+RUTA_LIMITE = "RP 6"
+
+
+def punto_en_poligono(lon, lat, poly):
+    adentro = False
+    j = len(poly) - 1
+    for i in range(len(poly)):
+        xi, yi = poly[i]
+        xj, yj = poly[j]
+        if (yi > lat) != (yj > lat) and lon < (xj - xi) * (lat - yi) / (yj - yi) + xi:
+            adentro = not adentro
+        j = i
+    return adentro
+
 
 # Tipos de camino sin número que se consideran acceso a un pueblo.
 # 'residential' y 'track' solo cuentan si el nombre dice "Acceso" (evita
@@ -63,7 +94,6 @@ def overpass(query, reintentos=3):
     for i in range(reintentos):
         for url in OVERPASS_URLS:
             try:
-                print(f"Consultando {url} ...", flush=True)
                 r = requests.post(url, data={"data": query}, timeout=900)
             except requests.RequestException as e:
                 print(f"  falló: {e}", flush=True)
@@ -96,8 +126,31 @@ def haversine_km(lat1, lon1, lat2, lon2):
 
 
 def main():
-    print("Descargando rutas de OSM (puede tardar unos minutos)...")
-    datos = overpass(QUERY_RUTAS)
+    print("Descargando rutas de OSM por celdas...", flush=True)
+    dlat = (LAT_MAX - LAT_MIN) / FILAS
+    dlon = (LON_MAX - LON_MIN) / COLS
+    elementos, vistos = [], set()
+    total = FILAS * COLS
+    k = 0
+    for i in range(FILAS):
+        for j in range(COLS):
+            k += 1
+            s_, n_ = LAT_MIN + i * dlat, LAT_MIN + (i + 1) * dlat
+            w_, e_ = LON_MIN + j * dlon, LON_MIN + (j + 1) * dlon
+            print(f"Celda {k}/{total}", flush=True)
+            try:
+                res = overpass(query_rutas(s_, w_, n_, e_))
+            except RuntimeError as ex:
+                print(f"  celda {k} omitida: {ex}", flush=True)
+                continue
+            for el in res.get("elements", []):
+                clave = (el["type"], el["id"])
+                if clave not in vistos:
+                    vistos.add(clave)
+                    elementos.append(el)
+            time.sleep(PAUSA_ENTRE_CELDAS)
+    datos = {"elements": elementos}
+    print(f"Elementos únicos descargados: {len(elementos)}", flush=True)
 
     nodos = {}                           # id -> (lat, lon)
     rutas_por_nodo = defaultdict(set)    # id nodo -> {'RN 5', 'RP 51', ...}
@@ -134,6 +187,8 @@ def main():
         accs = accesos_por_nodo.get(nid, set())
         if len(refs) >= 2 or accs:
             lat, lon = nodos[nid]
+            if RUTA_LIMITE not in refs and punto_en_poligono(lon, lat, POLIGONO_GBA):
+                continue  # Gran Buenos Aires: afuera del alcance
             cruces.append({"nodo_osm": nid, "lat": lat, "lon": lon,
                            "rutas": sorted(refs), "accesos": sorted(accs),
                            "tipo": "ruta-ruta" if len(refs) >= 2 else "acceso"})
