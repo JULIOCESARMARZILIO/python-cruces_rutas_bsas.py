@@ -50,7 +50,10 @@
   </label>
   <label style="margin-left:18px"><input type="checkbox" id="c_solo_rr" checked> solo cruces ruta×ruta</label>
   <label><input type="checkbox" id="c_caminos"> Caminos rurales 25 de Mayo</label>
+  <label><input type="checkbox" id="c_campos" checked> Mis campos</label>
+  <button id="btn_campo" style="width:100%;margin-top:6px;padding:9px;border:none;border-radius:8px;background:#0a7d2c;color:#fff;font-weight:600;cursor:pointer;font-size:14px">➕ Agregar campo</button>
   <div class="leyenda">
+    <div><span class="pt" style="background:#111"></span>Campo (cargado por vos)</div>
     <div><span class="pt" style="background:#1a7f37"></span>Planta verificada</div>
     <div><span class="pt" style="background:#2b7fff"></span>Planta confianza alta</div>
     <div><span class="pt" style="background:#e8a800"></span>Planta media / baja</div>
@@ -196,13 +199,61 @@ async function toggleCaminos(){
   mostrarCarga(false);
 }
 
+// --- Mis campos (cargados por el usuario, guardados en el servidor)
+function toggleCampos(){
+  const el = document.getElementById('c_campos');
+  if (capas.campos){ mapa.removeLayer(capas.campos); delete capas.campos; }
+  if (!el.checked) return;
+  cargarGeo('campos', 'campos.geojson', (p,lat,lon)=>{
+    const m = L.circleMarker([lat,lon], {radius:7, color:'#fff', weight:2, fillColor:'#111', fillOpacity:1});
+    m.bindPopup('<div class="popup"><b>'+esc(p.nombre||'Campo')+'</b><br>'
+      + (p.nota?esc(p.nota)+'<br>':'') + lat.toFixed(5)+', '+lon.toFixed(5)
+      + '<br><a href="#" onclick="borrarCampo('+(p.id||0)+');return false">borrar</a></div>');
+    return m;
+  }, false);
+}
+async function borrarCampo(id){
+  if (!id || !confirm('¿Borrar este campo?')) return;
+  try{ await fetch('api/campo/borrar',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({id})}); mapa.closePopup(); toggleCampos(); }
+  catch(e){ alert('No se pudo borrar.'); }
+}
+window.borrarCampo = borrarCampo;
+
+// modo "agregar campo": tocás el mapa y queda guardado
+let modoAgregar = false;
+const btnCampo = document.getElementById('btn_campo');
+btnCampo.onclick = () => {
+  modoAgregar = !modoAgregar;
+  btnCampo.textContent = modoAgregar ? '📍 Tocá el lugar del campo…' : '➕ Agregar campo';
+  btnCampo.style.background = modoAgregar ? '#b02a00' : '#0a7d2c';
+  mapa.getContainer().style.cursor = modoAgregar ? 'crosshair' : '';
+};
+mapa.on('click', async e => {
+  if (!modoAgregar) return;
+  const nombre = prompt('Nombre del campo:');
+  if (nombre === null) return;
+  try{
+    const r = await fetch('api/campo', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nombre, lat: e.latlng.lat, lon: e.latlng.lng }) });
+    const j = await r.json();
+    if (j.ok){
+      modoAgregar = false; btnCampo.textContent = '➕ Agregar campo';
+      btnCampo.style.background = '#0a7d2c'; mapa.getContainer().style.cursor = '';
+      document.getElementById('c_campos').checked = true; toggleCampos();
+    } else alert('No se pudo guardar: ' + (j.error||''));
+  }catch(err){ alert('Error guardando el campo.'); }
+});
+
 document.getElementById('c_puertos').onchange = togglePuertos;
 document.getElementById('sel_prov').onchange = cargarCruces;
 document.getElementById('c_solo_rr').onchange = cargarCruces;
 document.getElementById('c_caminos').onchange = toggleCaminos;
+document.getElementById('c_campos').onchange = toggleCampos;
 
 togglePlantas();
 togglePuertos();
+toggleCampos();
 </script>
 </body>
 </html>

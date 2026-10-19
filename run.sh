@@ -22,9 +22,11 @@ python secuencias_rutas.py || true
 if [ -n "$CALC_CAMINOS" ]; then
   python caminos_partido.py "$CALC_CAMINOS" || echo "caminos_partido.py terminó con error (se sigue igual)"
 fi
-for H in mapa.html mapa_25_de_mayo.html; do
+for H in mapa.html mapa_25_de_mayo.html marcar.html; do
   cp "$(dirname "$0")/$H" "$DIR_SALIDA/" 2>/dev/null || cp "/app/$H" "$DIR_SALIDA/" 2>/dev/null || true
 done
+# archivo de campos cargados por el usuario (no pisar si ya existe)
+[ -f "$DIR_SALIDA/campos.geojson" ] || echo '{"type":"FeatureCollection","features":[]}' > "$DIR_SALIDA/campos.geojson"
 cd "$DIR_SALIDA"
 {
   echo '<!doctype html><meta charset="utf-8"><title>Cruces de rutas, silos y puertos</title>'

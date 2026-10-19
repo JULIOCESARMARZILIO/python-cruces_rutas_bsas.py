@@ -9,13 +9,57 @@ Servidor HTTP mínimo (stdlib) para publicar DIR_SALIDA y buscar en los CSV:
 import csv
 import glob
 import html
+import json
 import os
+import threading
+import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 DIR_SALIDA = os.environ.get("DIR_SALIDA", "/data/salida")
 PORT = int(os.environ.get("PORT", "8080"))
 MAX_FILAS = 500
+
+CAMPOS = os.path.join(DIR_SALIDA, "campos.geojson")
+_LOCK = threading.Lock()
+
+
+def cargar_campos():
+    if os.path.exists(CAMPOS):
+        try:
+            with open(CAMPOS, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:  # noqa
+            pass
+    return {"type": "FeatureCollection", "features": []}
+
+
+def guardar_campo(nombre, lat, lon, nota=""):
+    with _LOCK:
+        fc = cargar_campos()
+        nuevo_id = max([f.get("properties", {}).get("id", 0) for f in fc["features"]] + [0]) + 1
+        feat = {"type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                "properties": {"id": nuevo_id, "nombre": nombre, "nota": nota,
+                               "creado": time.strftime("%Y-%m-%d %H:%M")}}
+        fc["features"].append(feat)
+        tmp = CAMPOS + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(fc, f, ensure_ascii=False)
+        os.replace(tmp, CAMPOS)
+        return feat
+
+
+def borrar_campo(cid):
+    with _LOCK:
+        fc = cargar_campos()
+        antes = len(fc["features"])
+        fc["features"] = [f for f in fc["features"] if f.get("properties", {}).get("id") != cid]
+        tmp = CAMPOS + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(fc, f, ensure_ascii=False)
+        os.replace(tmp, CAMPOS)
+        return antes - len(fc["features"])
 
 
 def buscar(q):
@@ -85,6 +129,35 @@ class Manejador(SimpleHTTPRequestHandler):
                 partes.append("</table>")
         partes.append("</body>")
         self._responder("".join(partes), "text/html; charset=utf-8")
+
+    def do_POST(self):
+        u = urlparse(self.path)
+        try:
+            largo = int(self.headers.get("Content-Length", 0))
+            cuerpo = json.loads(self.rfile.read(largo) or b"{}")
+        except Exception:  # noqa
+            cuerpo = {}
+        if u.path == "/api/campo":
+            try:
+                lat = float(cuerpo["lat"]); lon = float(cuerpo["lon"])
+            except Exception:  # noqa
+                return self._json({"ok": False, "error": "lat/lon inválidos"}, 400)
+            nombre = (str(cuerpo.get("nombre") or "")).strip()[:120] or "Campo sin nombre"
+            nota = (str(cuerpo.get("nota") or "")).strip()[:500]
+            feat = guardar_campo(nombre, lat, lon, nota)
+            return self._json({"ok": True, "feature": feat})
+        if u.path == "/api/campo/borrar":
+            n = borrar_campo(cuerpo.get("id"))
+            return self._json({"ok": True, "borrados": n})
+        self._json({"ok": False, "error": "ruta no encontrada"}, 404)
+
+    def _json(self, obj, code=200):
+        datos = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(datos)))
+        self.end_headers()
+        self.wfile.write(datos)
 
     def _responder(self, cuerpo, tipo):
         datos = cuerpo.encode("utf-8")

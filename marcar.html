@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marcar caminos faltantes</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; font-family: system-ui, sans-serif; }
+  #mapa { position:absolute; inset:0; }
+  #panel { position:absolute; top:10px; left:10px; z-index:1000; max-width:280px;
+    background:rgba(255,255,255,.96); color:#111; padding:12px 14px; border-radius:10px;
+    box-shadow:0 2px 12px rgba(0,0,0,.3); font-size:13px; }
+  #panel h1 { font-size:15px; margin:0 0 6px; }
+  #panel button { width:100%; margin-top:8px; padding:9px; border:none; border-radius:8px;
+    background:#1a7f37; color:#fff; font-size:14px; font-weight:600; cursor:pointer; }
+  #panel .sec { background:#eee; color:#111; }
+  #cuenta { margin-top:8px; font-weight:600; }
+  ol { margin:6px 0 0 18px; padding:0; } li { margin:2px 0; }
+</style>
+</head>
+<body>
+<div id="mapa"></div>
+<div id="panel">
+  <h1>Marcar caminos faltantes</h1>
+  <ol>
+    <li>Elegí <b>Satélite</b> (arriba a la derecha).</li>
+    <li>Con la herramienta de línea (izquierda) dibujá cada camino que falte; doble clic para terminarlo.</li>
+    <li>Cuando tengas varios, tocá <b>Descargar</b> y mandame el archivo.</li>
+  </ol>
+  <div id="cuenta">Marcados: 0</div>
+  <button id="bajar">⬇ Descargar lo marcado (GeoJSON)</button>
+  <button id="limpiar" class="sec">Borrar todo</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script>
+const mapa = L.map('mapa').setView([-35.43,-60.17], 11);
+const baseMapa = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  { maxZoom:19, attribution:'© OpenStreetMap' });
+const baseSat = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom:19, attribution:'Imágenes © Esri' }).addTo(mapa);
+L.control.layers({ 'Satélite':baseSat, 'Mapa':baseMapa }, {}, { position:'topright', collapsed:false }).addTo(mapa);
+
+// capa editable + controles de dibujo (líneas y puntos)
+const dibujado = new L.FeatureGroup().addTo(mapa);
+const draw = new L.Control.Draw({
+  position:'topleft',
+  draw: { polyline:{ shapeOptions:{ color:'#ff3b30', weight:4 } },
+          marker:true, polygon:false, rectangle:false, circle:false, circlemarker:false },
+  edit: { featureGroup: dibujado }
+});
+mapa.addControl(draw);
+
+const cuenta = document.getElementById('cuenta');
+function actualizar(){ cuenta.textContent = 'Marcados: ' + dibujado.getLayers().length; }
+mapa.on(L.Draw.Event.CREATED, e => { dibujado.addLayer(e.layer); actualizar(); });
+mapa.on('draw:deleted', actualizar);
+mapa.on('draw:edited', actualizar);
+
+document.getElementById('bajar').onclick = () => {
+  const n = dibujado.getLayers().length;
+  if (!n){ alert('Todavía no marcaste nada.'); return; }
+  const gj = dibujado.toGeoJSON();
+  gj.features.forEach((f,i)=>{ f.properties = f.properties||{}; f.properties.id = i+1;
+    f.properties.nota = f.properties.nota || ''; });
+  const blob = new Blob([JSON.stringify(gj)], { type:'application/geo+json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'caminos_marcados.geojson';
+  a.click();
+};
+document.getElementById('limpiar').onclick = () => {
+  if (confirm('¿Borrar todo lo marcado?')){ dibujado.clearLayers(); actualizar(); }
+};
+
+// guarda un respaldo en el navegador por si se recarga
+mapa.on(L.Draw.Event.CREATED, ()=> {
+  try{ localStorage.setItem('marcados', JSON.stringify(dibujado.toGeoJSON())); }catch(e){}
+});
+try{
+  const prev = localStorage.getItem('marcados');
+  if (prev){ L.geoJSON(JSON.parse(prev)).eachLayer(l=>dibujado.addLayer(l)); actualizar(); }
+}catch(e){}
+</script>
+</body>
+</html>
