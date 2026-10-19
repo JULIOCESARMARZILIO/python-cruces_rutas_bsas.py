@@ -75,6 +75,7 @@ class Paso1(osmium.SimpleHandler):
         self.nombre_provincia = nombre_provincia
         self.provincia = None
         self.relaciones = []   # [{name, lvl, ways:[(ref, role)]}]
+        self.pistas = []       # relaciones admin con 'mayo'/'veinti'/'25' en algún nombre
 
     def area(self, a):
         t = a.tags
@@ -88,21 +89,26 @@ class Paso1(osmium.SimpleHandler):
 
     def relation(self, r):
         t = r.tags
-        # algunas relaciones de partido no llevan boundary=administrative en la
-        # relación (está en los ways); basta admin_level + nombre.
-        if t.get("admin_level") not in NIVELES_PARTIDO:
+        lvl = t.get("admin_level")
+        if lvl not in {"5", "6", "7", "8", "9"}:
             return
         es_admin = (t.get("boundary") == "administrative" or t.get("type") == "boundary")
         if not es_admin:
             return
-        nn = normnombre(t.get("name", ""))
-        if not any(v == nn or v in nn for v in self.variantes):
-            return
+        nombres = [t.get(k, "") for k in ("name", "name:es", "official_name",
+                                          "alt_name", "short_name")]
+        nns = [normnombre(x) for x in nombres if x]
         ways = [(m.ref, m.role) for m in r.members if m.type == "w"]
-        if ways:
-            self.relaciones.append({"name": t.get("name", ""), "lvl": t.get("admin_level"),
-                                    "ways": ways})
-            log(f"  relación candidata: '{t.get('name')}' (lvl {t.get('admin_level')}, "
+        # diagnóstico: cualquier admin con pista de "mayo"/"veinti"/"25 de"
+        if any(("mayo" in x or "veinti" in x or "25 de" in x) for x in nns):
+            self.pistas.append({"nombres": [x for x in nombres if x], "lvl": lvl,
+                                "boundary": t.get("boundary", ""), "type": t.get("type", ""),
+                                "n_ways": len(ways)})
+        # candidato si algún nombre matchea una variante
+        if any(any(v == x or v in x for v in self.variantes) for x in nns) and ways:
+            self.relaciones.append({"name": t.get("name", "") or (nombres[0] if nombres else ""),
+                                    "lvl": lvl, "ways": ways})
+            log(f"  relación candidata: '{self.relaciones[-1]['name']}' (lvl {lvl}, "
                 f"{len(ways)} ways)")
 
 
@@ -208,6 +214,13 @@ def main():
     if p1.provincia is None:
         log(f"No se encontró la provincia {PROVINCIA}.")
         sys.exit(1)
+    # volcar pistas de diagnóstico siempre
+    try:
+        with open(os.path.join(DIR_SALIDA, "caminos_debug.json"), "w", encoding="utf-8") as f:
+            json.dump({"pistas": p1.pistas, "n_candidatas": len(p1.relaciones)}, f,
+                      ensure_ascii=False, indent=1)
+    except Exception:  # noqa
+        pass
     if not p1.relaciones:
         log(f"No se encontró ninguna relación boundary con nombre {variantes}.")
         sys.exit(1)
@@ -240,6 +253,11 @@ def main():
     # el partido es el polígono más grande dentro de la provincia (la ciudad es chica)
     en_prov.sort(key=lambda x: -x[0])
     a_km2, elegido, nombre, lvl_el = en_prov[0]
+    if a_km2 < 1000:
+        log(f"El mayor polígono en {PROVINCIA} tiene solo {a_km2:.0f} km² "
+            f"('{nombre}', lvl {lvl_el}): es la localidad, no el partido. "
+            f"El partido no está como relación nombrada en el extracto OSM.")
+        sys.exit(2)
     log(f"Partido elegido: '{nombre}' (lvl {lvl_el}) — área ≈ {a_km2:.0f} km²")
     a_km2 = area_km2(elegido)
     a_km2 = area_km2(elegido)
