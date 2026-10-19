@@ -3,9 +3,13 @@ Extrae TODOS los caminos (highway) de un PARTIDO de la Provincia de Buenos Aires
 desde el extracto de Argentina de OpenStreetMap (Geofabrik), y calcula los km
 totales por tipo. Pensado para medir la red de caminos rurales de un partido.
 
+OSM de Argentina no deja ensamblar el polígono del partido con el area-handler
+de osmium (las relaciones grandes de partido no se arman solas), así que el
+polígono se construye a mano uniendo los 'ways' de la relación boundary del
+partido (shapely.polygonize). Se desambigua por centroide dentro de la provincia.
+
 Uso:
     python caminos_partido.py "25_de_mayo"
-El argumento es el slug del partido (se mapea a su nombre OSM en PARTIDOS).
 
 Salida (en DIR_SALIDA):
   caminos_<slug>.geojson           LineStrings con highway, ref, nombre, km
@@ -20,33 +24,31 @@ import unicodedata
 
 import osmium
 from shapely import wkb
-from shapely.geometry import Point
+from shapely.geometry import LineString, Point
+from shapely.ops import polygonize, unary_union
 from shapely.prepared import prep
 
 DIR_DATOS = os.environ.get("DIR_DATOS", "/data")
 DIR_SALIDA = os.environ.get("DIR_SALIDA", os.path.join(DIR_DATOS, "salida"))
 PBF = os.path.join(DIR_DATOS, "argentina-latest.osm.pbf")
 
-# slug -> variantes de nombre del partido en OSM (boundary admin_level 6/7).
-# Se comparan normalizadas (sin acentos, minúsculas, sin "partido de ").
+# slug -> variantes de nombre del partido en OSM (normalizadas)
 PARTIDOS = {
     "25_de_mayo": ["25 de mayo", "veinticinco de mayo"],
 }
-PROVINCIA = "Buenos Aires"   # para descartar homónimos (admin_level=4)
-NIVELES_PARTIDO = {"6", "7"}
-
-
-def normnombre(s):
-    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
-    s = s.replace("partido de ", "").replace("municipio de ", "")
-    return " ".join(s.split())
-
-# caminos de tierra / agrícolas que consideramos "rurales"
+PROVINCIA = "Buenos Aires"
+NIVELES_PARTIDO = {"6", "7", "8"}
 CAMINOS_RURALES = {"track", "unclassified", "residential"}
 
 
 def log(m):
     print(m, flush=True)
+
+
+def normnombre(s):
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+    s = s.replace("partido de ", "").replace("municipio de ", "").replace("distrito ", "")
+    return " ".join(s.split())
 
 
 def haversine_km(lat1, lon1, lat2, lon2):
@@ -58,57 +60,95 @@ def haversine_km(lat1, lon1, lat2, lon2):
 
 
 def area_km2(poly):
-    """Área aproximada de un polígono lon/lat en km² (proyección equirectangular local)."""
     lat0 = poly.centroid.y
     kx = 111.320 * math.cos(math.radians(lat0))
     ky = 110.574
-    # shapely .area está en grados²; escalamos por kx*ky
     return abs(poly.area) * kx * ky
 
 
-# ---------------------------------------------------- pasada 1: límites
-class Limites(osmium.SimpleHandler):
-    """Busca el polígono del partido (admin_level=6) y el de la provincia (=4)."""
-
-    def __init__(self, variantes_partido, nombre_provincia):
+# --------- Pasada 1: polígono de la provincia (area) + relaciones candidatas
+class Paso1(osmium.SimpleHandler):
+    def __init__(self, variantes, nombre_provincia):
         super().__init__()
         self.fab = osmium.geom.WKBFactory()
-        self.variantes = set(variantes_partido)
+        self.variantes = variantes
         self.nombre_provincia = nombre_provincia
         self.provincia = None
-        self.partidos = []   # [(nombre, lvl, geom)] todos los admin_level 6/7
-        self.fallas = 0      # relaciones admin que no se pudieron ensamblar
+        self.relaciones = []   # [{name, lvl, ways:[(ref, role)]}]
 
     def area(self, a):
         t = a.tags
-        if t.get("boundary") != "administrative":
-            return
-        lvl = t.get("admin_level")
-        nombre = t.get("name", "")
-        if lvl == "4" and nombre == self.nombre_provincia and self.provincia is None:
+        if (t.get("boundary") == "administrative" and t.get("admin_level") == "4"
+                and t.get("name") == self.nombre_provincia and self.provincia is None):
             try:
                 self.provincia = wkb.loads(self.fab.create_multipolygon(a), hex=True)
-                log(f"  provincia cargada: {nombre}")
+                log(f"  provincia cargada: {t.get('name')}")
             except Exception as e:  # noqa
-                log(f"  no se pudo armar provincia {nombre}: {e}")
-        elif lvl in NIVELES_PARTIDO and nombre:
-            try:
-                g = wkb.loads(self.fab.create_multipolygon(a), hex=True)
-                self.partidos.append((nombre, lvl, g))
-            except Exception:  # noqa
-                self.fallas += 1
-                if "mayo" in normnombre(nombre):
-                    log(f"  FALLÓ ensamblar '{nombre}' (lvl {lvl})")
+                log(f"  no se pudo armar provincia: {e}")
+
+    def relation(self, r):
+        t = r.tags
+        if t.get("boundary") != "administrative":
+            return
+        if t.get("admin_level") not in NIVELES_PARTIDO:
+            return
+        nn = normnombre(t.get("name", ""))
+        if not any(v == nn or v in nn for v in self.variantes):
+            return
+        ways = [(m.ref, m.role) for m in r.members if m.type == "w"]
+        if ways:
+            self.relaciones.append({"name": t.get("name", ""), "lvl": t.get("admin_level"),
+                                    "ways": ways})
+            log(f"  relación candidata: '{t.get('name')}' (lvl {t.get('admin_level')}, "
+                f"{len(ways)} ways)")
 
 
-# ---------------------------------------------------- pasada 2: caminos
+# --------- Pasada 2: geometría de los ways de las relaciones candidatas
+class Paso2(osmium.SimpleHandler):
+    def __init__(self, needed_ids):
+        super().__init__()
+        self.needed = needed_ids
+        self.geom = {}   # way_id -> [(lon, lat), ...]
+
+    def way(self, w):
+        if w.id not in self.needed:
+            return
+        coords = []
+        try:
+            for nd in w.nodes:
+                loc = nd.location
+                if loc.valid():
+                    coords.append((loc.lon, loc.lat))
+        except osmium.InvalidLocationError:
+            return
+        if len(coords) >= 2:
+            self.geom[w.id] = coords
+
+
+def construir_poligono(rel, geom):
+    lineas = []
+    for ref, role in rel["ways"]:
+        if role in ("", "outer", "inner") and ref in geom:
+            lineas.append(LineString(geom[ref]))
+    if not lineas:
+        return None
+    try:
+        polys = list(polygonize(unary_union(lineas)))
+    except Exception:  # noqa
+        return None
+    if not polys:
+        return None
+    return unary_union(polys)
+
+
+# --------- Pasada 3: caminos dentro del partido
 class Caminos(osmium.SimpleHandler):
     def __init__(self, poligono_prep):
         super().__init__()
         self.poly = poligono_prep
         self.features = []
         self.km_por_tipo = {}
-        self.km_por_tipo_ref = {}   # tipos con ref de ruta (RN/RP)
+        self.km_por_tipo_ref = {}
         self.n = 0
 
     def way(self, w):
@@ -117,7 +157,7 @@ class Caminos(osmium.SimpleHandler):
         if not hw:
             return
         self.n += 1
-        if self.n % 2_000_000 == 0:
+        if self.n % 3_000_000 == 0:
             log(f"  vías recorridas: {self.n // 1_000_000} M")
         coords = []
         try:
@@ -129,7 +169,6 @@ class Caminos(osmium.SimpleHandler):
             return
         if len(coords) < 2:
             return
-        # filtro rápido: primer nodo dentro del partido
         if not self.poly.contains(Point(coords[0][0], coords[0][1])):
             return
         km = 0.0
@@ -142,7 +181,8 @@ class Caminos(osmium.SimpleHandler):
             self.km_por_tipo_ref[hw] = self.km_por_tipo_ref.get(hw, 0.0) + km
         self.features.append({
             "type": "Feature",
-            "geometry": {"type": "LineString", "coordinates": [[round(x, 6), round(y, 6)] for x, y in coords]},
+            "geometry": {"type": "LineString",
+                         "coordinates": [[round(x, 6), round(y, 6)] for x, y in coords]},
             "properties": {"highway": hw, "ref": ref, "nombre": t.get("name", ""),
                            "km": round(km, 3), "ruta": es_ruta},
         })
@@ -154,60 +194,49 @@ def main():
     if not variantes:
         log(f"Partido desconocido: {slug}. Conocidos: {list(PARTIDOS)}")
         sys.exit(1)
-    nombre = variantes[0]
     if not os.path.exists(PBF):
         log(f"No está el mapa {PBF}")
         sys.exit(1)
     os.makedirs(DIR_SALIDA, exist_ok=True)
 
-    log(f"Pasada 1: límites (partido {variantes} en {PROVINCIA})...")
-    lim = Limites(variantes, PROVINCIA)
-    lim.apply_file(PBF, locations=True, idx="flex_mem")
-    if lim.provincia is None:
-        log(f"No se encontró la provincia {PROVINCIA} (admin_level=4).")
+    log(f"Pasada 1: provincia + relaciones del partido {variantes}...")
+    p1 = Paso1(variantes, PROVINCIA)
+    p1.apply_file(PBF, locations=True, idx="flex_mem")
+    if p1.provincia is None:
+        log(f"No se encontró la provincia {PROVINCIA}.")
         sys.exit(1)
-    # quedarse con los partidos cuyo centroide cae dentro de la provincia
-    prov_prep = prep(lim.provincia)
-    en_prov = [(nom, lvl, g) for nom, lvl, g in lim.partidos if prov_prep.contains(g.centroid)]
-    log(f"  partidos de {PROVINCIA}: {len(en_prov)} (de {len(lim.partidos)} total; "
-        f"{lim.fallas} fallas de ensamblado)")
-    # dump a archivo para diagnóstico (fetcheable por HTTP)
-    try:
-        claves = ("mayo", "veinti", "saladillo", "monte", "olavarr", "lavalle", "bragado")
-        interes = [{"nombre": nom, "lvl": lvl,
-                    "cent_lat": round(g.centroid.y, 3), "cent_lon": round(g.centroid.x, 3),
-                    "en_prov": prov_prep.contains(g.centroid)}
-                   for nom, lvl, g in lim.partidos if any(c in normnombre(nom) for c in claves)]
-        prov_cent = lim.provincia.centroid
-        with open(os.path.join(DIR_SALIDA, "caminos_debug.json"), "w", encoding="utf-8") as f:
-            json.dump({"total_areas": len(lim.partidos), "en_prov_count": len(en_prov),
-                       "fallas": lim.fallas,
-                       "prov_centroide": [round(prov_cent.y, 3), round(prov_cent.x, 3)],
-                       "prov_area_km2": round(area_km2(lim.provincia), 0),
-                       "coincidencias": interes}, f, ensure_ascii=False, indent=1)
-    except Exception as e:  # noqa
-        log(f"  no se pudo escribir debug: {e}")
-    pistas = sorted({f"{nom} (lvl {lvl})" for nom, lvl, g in en_prov if "mayo" in normnombre(nom)})
-    if pistas:
-        log("  con 'mayo': " + "; ".join(pistas))
-    elegido = None
-    for nom, lvl, g in en_prov:
-        nn = normnombre(nom)
-        if nn in lim.variantes or any(v in nn for v in lim.variantes):
-            elegido = g
-            nombre = nom
-            log(f"  elegido: '{nom}' (lvl {lvl}) centroide={g.centroid.y:.3f},{g.centroid.x:.3f}")
-            break
+    if not p1.relaciones:
+        log(f"No se encontró ninguna relación boundary con nombre {variantes}.")
+        sys.exit(1)
+
+    needed = set()
+    for rel in p1.relaciones:
+        for ref, role in rel["ways"]:
+            needed.add(ref)
+    log(f"Pasada 2: geometría de {len(needed)} ways de {len(p1.relaciones)} relaciones...")
+    p2 = Paso2(needed)
+    p2.apply_file(PBF, locations=True, idx="flex_mem")
+
+    prov_prep = prep(p1.provincia)
+    elegido, nombre = None, None
+    for rel in p1.relaciones:
+        poly = construir_poligono(rel, p2.geom)
+        if poly is None or poly.is_empty:
+            log(f"  '{rel['name']}': no se pudo armar polígono")
+            continue
+        c = poly.centroid
+        dentro = prov_prep.contains(c)
+        log(f"  '{rel['name']}' (lvl {rel['lvl']}): área≈{area_km2(poly):.0f} km², "
+            f"centroide={c.y:.3f},{c.x:.3f}, en {PROVINCIA}={dentro}")
+        if dentro and elegido is None:
+            elegido, nombre = poly, rel["name"]
     if elegido is None:
-        log(f"No se encontró el partido {variantes} dentro de {PROVINCIA} "
-            f"(de {len(en_prov)} partidos). Nombres disponibles:")
-        for nom, lvl, g in sorted(en_prov, key=lambda x: x[0]):
-            log(f"    [{lvl}] {nom}")
+        log(f"Ninguna relación {variantes} cae dentro de {PROVINCIA}.")
         sys.exit(1)
     a_km2 = area_km2(elegido)
-    log(f"  partido elegido: área ≈ {a_km2:.0f} km²")
+    log(f"Partido elegido: '{nombre}' — área ≈ {a_km2:.0f} km²")
 
-    log("Pasada 2: caminos dentro del partido...")
+    log("Pasada 3: caminos dentro del partido...")
     cam = Caminos(prep(elegido))
     cam.apply_file(PBF, locations=True, idx="flex_mem")
 
