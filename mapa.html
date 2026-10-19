@@ -63,9 +63,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
 <script>
 const mapa = L.map('mapa').setView([-35.5, -60.5], 7);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+const baseMapa = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19, attribution: '© OpenStreetMap'
 }).addTo(mapa);
+const baseSat = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19, attribution: 'Imágenes © Esri'
+});
+L.control.layers(
+  { 'Mapa': baseMapa, 'Satélite': baseSat },
+  {}, { position: 'topright', collapsed: false }
+).addTo(mapa);
 
 const cargando = document.getElementById('cargando');
 function mostrarCarga(v){ cargando.style.display = v ? 'block' : 'none'; }
