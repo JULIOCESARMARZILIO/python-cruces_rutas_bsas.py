@@ -16,7 +16,13 @@
     border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.3);
     max-width: 300px; max-height: 92vh; overflow:auto; font-size: 14px;
   }
-  #panel h1 { font-size: 16px; margin: 0 0 2px; }
+  #panel h1 { font-size: 16px; margin: 0 28px 2px 0; }
+  #cerrar { position:absolute; top:8px; right:10px; z-index:1001; cursor:pointer;
+    border:none; background:#eee; color:#111; width:24px; height:24px; border-radius:12px;
+    font-size:15px; line-height:1; }
+  #reabrir { position:absolute; top:10px; left:10px; z-index:1000; cursor:pointer; display:none;
+    border:none; background:rgba(255,255,255,.96); color:#b02a00; font-weight:700;
+    padding:8px 12px; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,.3); font-size:14px; }
   #panel .sub { color:#555; font-size:12px; margin-bottom:10px; }
   .total { font-size: 26px; font-weight: 700; color:#b02a00; line-height:1.1; }
   .total small { font-size: 13px; font-weight: 400; color:#444; }
@@ -32,7 +38,9 @@
 <body>
 <div id="mapa"></div>
 <div id="cargando">Cargando caminos…</div>
+<button id="reabrir">ℹ Ver datos</button>
 <div id="panel">
+  <button id="cerrar" title="Cerrar">✕</button>
   <h1>Partido de 25 de Mayo</h1>
   <div class="sub" id="area">Buenos Aires</div>
   <div class="total" id="totalRural">— <small>km de caminos rurales</small></div>
@@ -110,6 +118,13 @@ async function init(){
   cargando.style.display='none';
 }
 init();
+
+// cerrar / reabrir el panel (en celular tapa el mapa)
+const panel=document.getElementById('panel'), cerrar=document.getElementById('cerrar'),
+      reabrir=document.getElementById('reabrir');
+cerrar.onclick=()=>{ panel.style.display='none'; reabrir.style.display='block'; };
+reabrir.onclick=()=>{ panel.style.display='block'; reabrir.style.display='none'; };
+if (window.innerWidth < 560){ panel.style.display='none'; reabrir.style.display='block'; }
 </script>
 </body>
 </html>
