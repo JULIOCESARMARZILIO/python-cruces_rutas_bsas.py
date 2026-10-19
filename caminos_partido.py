@@ -16,6 +16,7 @@ import json
 import math
 import os
 import sys
+import unicodedata
 
 import osmium
 from shapely import wkb
@@ -26,11 +27,19 @@ DIR_DATOS = os.environ.get("DIR_DATOS", "/data")
 DIR_SALIDA = os.environ.get("DIR_SALIDA", os.path.join(DIR_DATOS, "salida"))
 PBF = os.path.join(DIR_DATOS, "argentina-latest.osm.pbf")
 
-# slug -> nombre del partido en OSM (boundary admin_level=6)
+# slug -> variantes de nombre del partido en OSM (boundary admin_level 6/7).
+# Se comparan normalizadas (sin acentos, minúsculas, sin "partido de ").
 PARTIDOS = {
-    "25_de_mayo": "25 de Mayo",
+    "25_de_mayo": ["25 de mayo", "veinticinco de mayo"],
 }
 PROVINCIA = "Buenos Aires"   # para descartar homónimos (admin_level=4)
+NIVELES_PARTIDO = {"6", "7"}
+
+
+def normnombre(s):
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+    s = s.replace("partido de ", "").replace("municipio de ", "")
+    return " ".join(s.split())
 
 # caminos de tierra / agrícolas que consideramos "rurales"
 CAMINOS_RURALES = {"track", "unclassified", "residential"}
@@ -61,13 +70,14 @@ def area_km2(poly):
 class Limites(osmium.SimpleHandler):
     """Busca el polígono del partido (admin_level=6) y el de la provincia (=4)."""
 
-    def __init__(self, nombre_partido, nombre_provincia):
+    def __init__(self, variantes_partido, nombre_provincia):
         super().__init__()
         self.fab = osmium.geom.WKBFactory()
-        self.nombre_partido = nombre_partido
+        self.variantes = set(variantes_partido)
         self.nombre_provincia = nombre_provincia
         self.candidatos_partido = []   # [(nombre, geom)]
         self.provincia = None
+        self.pistas = []               # nombres level 6/7 que contienen "mayo" (diagnóstico)
 
     def area(self, a):
         t = a.tags
@@ -81,13 +91,18 @@ class Limites(osmium.SimpleHandler):
                 log(f"  provincia cargada: {nombre}")
             except Exception as e:  # noqa
                 log(f"  no se pudo armar provincia {nombre}: {e}")
-        elif lvl == "6" and nombre == self.nombre_partido:
-            try:
-                g = wkb.loads(self.fab.create_multipolygon(a), hex=True)
-                self.candidatos_partido.append((nombre, g))
-                log(f"  candidato partido '{nombre}' centroide={g.centroid.y:.3f},{g.centroid.x:.3f}")
-            except Exception as e:  # noqa
-                log(f"  no se pudo armar partido {nombre}: {e}")
+        elif lvl in NIVELES_PARTIDO:
+            nn = normnombre(nombre)
+            if "mayo" in nn:
+                self.pistas.append(f"{nombre} (lvl {lvl})")
+            if nn in self.variantes:
+                try:
+                    g = wkb.loads(self.fab.create_multipolygon(a), hex=True)
+                    self.candidatos_partido.append((nombre, g))
+                    log(f"  candidato partido '{nombre}' (lvl {lvl}) "
+                        f"centroide={g.centroid.y:.3f},{g.centroid.x:.3f}")
+                except Exception as e:  # noqa
+                    log(f"  no se pudo armar partido {nombre}: {e}")
 
 
 # ---------------------------------------------------- pasada 2: caminos
@@ -139,23 +154,26 @@ class Caminos(osmium.SimpleHandler):
 
 def main():
     slug = sys.argv[1] if len(sys.argv) > 1 else "25_de_mayo"
-    nombre = PARTIDOS.get(slug)
-    if not nombre:
+    variantes = PARTIDOS.get(slug)
+    if not variantes:
         log(f"Partido desconocido: {slug}. Conocidos: {list(PARTIDOS)}")
         sys.exit(1)
+    nombre = variantes[0]
     if not os.path.exists(PBF):
         log(f"No está el mapa {PBF}")
         sys.exit(1)
     os.makedirs(DIR_SALIDA, exist_ok=True)
 
-    log(f"Pasada 1: límites (partido '{nombre}' en {PROVINCIA})...")
-    lim = Limites(nombre, PROVINCIA)
+    log(f"Pasada 1: límites (partido {variantes} en {PROVINCIA})...")
+    lim = Limites(variantes, PROVINCIA)
     lim.apply_file(PBF, locations=True, idx="flex_mem")
     if lim.provincia is None:
         log(f"No se encontró la provincia {PROVINCIA} (admin_level=4).")
         sys.exit(1)
     if not lim.candidatos_partido:
-        log(f"No se encontró el partido '{nombre}' (admin_level=6).")
+        log(f"No se encontró el partido {variantes} (admin_level 6/7).")
+        if lim.pistas:
+            log("  Límites con 'mayo' en el nombre: " + "; ".join(sorted(set(lim.pistas))))
         sys.exit(1)
     # elegir el candidato cuyo centroide cae dentro de la provincia
     prov_prep = prep(lim.provincia)
