@@ -77,6 +77,7 @@ class Limites(osmium.SimpleHandler):
         self.nombre_provincia = nombre_provincia
         self.provincia = None
         self.partidos = []   # [(nombre, lvl, geom)] todos los admin_level 6/7
+        self.fallas = 0      # relaciones admin que no se pudieron ensamblar
 
     def area(self, a):
         t = a.tags
@@ -95,7 +96,9 @@ class Limites(osmium.SimpleHandler):
                 g = wkb.loads(self.fab.create_multipolygon(a), hex=True)
                 self.partidos.append((nombre, lvl, g))
             except Exception:  # noqa
-                pass
+                self.fallas += 1
+                if "mayo" in normnombre(nombre):
+                    log(f"  FALLÓ ensamblar '{nombre}' (lvl {lvl})")
 
 
 # ---------------------------------------------------- pasada 2: caminos
@@ -166,7 +169,16 @@ def main():
     # quedarse con los partidos cuyo centroide cae dentro de la provincia
     prov_prep = prep(lim.provincia)
     en_prov = [(nom, lvl, g) for nom, lvl, g in lim.partidos if prov_prep.contains(g.centroid)]
-    log(f"  partidos de {PROVINCIA}: {len(en_prov)}")
+    log(f"  partidos de {PROVINCIA}: {len(en_prov)} (de {len(lim.partidos)} total; "
+        f"{lim.fallas} fallas de ensamblado)")
+    # dump a archivo para diagnóstico (fetcheable por HTTP)
+    try:
+        with open(os.path.join(DIR_SALIDA, "caminos_debug.json"), "w", encoding="utf-8") as f:
+            json.dump({"en_prov": sorted(f"[{lvl}] {nom}" for nom, lvl, g in en_prov),
+                       "total_partidos": len(lim.partidos), "fallas": lim.fallas}, f,
+                      ensure_ascii=False, indent=1)
+    except Exception:  # noqa
+        pass
     pistas = sorted({f"{nom} (lvl {lvl})" for nom, lvl, g in en_prov if "mayo" in normnombre(nom)})
     if pistas:
         log("  con 'mayo': " + "; ".join(pistas))
