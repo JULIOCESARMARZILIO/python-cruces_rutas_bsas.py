@@ -49,6 +49,7 @@
     </select>
   </label>
   <label style="margin-left:18px"><input type="checkbox" id="c_solo_rr" checked> solo cruces ruta×ruta</label>
+  <label><input type="checkbox" id="c_caminos"> Caminos rurales 25 de Mayo</label>
   <div class="leyenda">
     <div><span class="pt" style="background:#1a7f37"></span>Planta verificada</div>
     <div><span class="pt" style="background:#2b7fff"></span>Planta confianza alta</div>
@@ -172,9 +173,33 @@ function cargarCruces(){
 
 document.getElementById('c_plantas').onchange = togglePlantas;
 document.getElementById('c_silos').onchange = toggleSilos;
+// --- Caminos rurales de un partido (líneas)
+async function toggleCaminos(){
+  const el = document.getElementById('c_caminos');
+  if (capas.caminos){ mapa.removeLayer(capas.caminos); delete capas.caminos; }
+  if (!el.checked) return;
+  mostrarCarga(true);
+  try{
+    const r = await fetch('caminos_25_de_mayo.geojson');
+    if (!r.ok) throw new Error(r.status);
+    const gj = await r.json();
+    capas.caminos = L.geoJSON(gj, {
+      style: f => f.properties && f.properties.ruta
+        ? {color:'#d12', weight:2, opacity:.9}
+        : {color:'#e8a800', weight:1, opacity:.8},
+      onEachFeature: (f,l)=> l.bindPopup(popupProps(f.properties||{},
+        (f.properties.nombre||f.properties.highway||'camino')+
+        (f.properties.km?(' — '+f.properties.km+' km'):'')))
+    });
+    mapa.addLayer(capas.caminos);
+  }catch(e){ console.warn('No se pudo cargar caminos', e); alert('Todavía no está publicada la capa de caminos de 25 de Mayo.'); el.checked=false; }
+  mostrarCarga(false);
+}
+
 document.getElementById('c_puertos').onchange = togglePuertos;
 document.getElementById('sel_prov').onchange = cargarCruces;
 document.getElementById('c_solo_rr').onchange = cargarCruces;
+document.getElementById('c_caminos').onchange = toggleCaminos;
 
 togglePlantas();
 togglePuertos();
