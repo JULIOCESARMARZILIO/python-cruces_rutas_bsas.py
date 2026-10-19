@@ -27,6 +27,7 @@ for H in mapa.html mapa_25_de_mayo.html marcar.html; do
 done
 # archivo de campos cargados por el usuario (no pisar si ya existe)
 [ -f "$DIR_SALIDA/campos.geojson" ] || echo '{"type":"FeatureCollection","features":[]}' > "$DIR_SALIDA/campos.geojson"
+[ -f "$DIR_SALIDA/caminos_usuario.geojson" ] || echo '{"type":"FeatureCollection","features":[]}' > "$DIR_SALIDA/caminos_usuario.geojson"
 cd "$DIR_SALIDA"
 {
   echo '<!doctype html><meta charset="utf-8"><title>Cruces de rutas, silos y puertos</title>'

@@ -52,8 +52,15 @@
   <label><input type="checkbox" id="c_caminos"> Caminos rurales 25 de Mayo</label>
   <label><input type="checkbox" id="c_campos" checked> Mis campos</label>
   <button id="btn_campo" style="width:100%;margin-top:6px;padding:9px;border:none;border-radius:8px;background:#0a7d2c;color:#fff;font-weight:600;cursor:pointer;font-size:14px">➕ Agregar campo</button>
+  <label style="margin-top:6px"><input type="checkbox" id="c_caminos_u" checked> Caminos marcados por vos</label>
+  <button id="btn_camino" style="width:100%;margin-top:4px;padding:9px;border:none;border-radius:8px;background:#1664c0;color:#fff;font-weight:600;cursor:pointer;font-size:14px">➕ Marcar camino</button>
+  <div id="camino_acciones" style="display:none;margin-top:4px">
+    <button id="btn_camino_fin" style="width:58%;padding:8px;border:none;border-radius:8px;background:#0a7d2c;color:#fff;font-weight:600;cursor:pointer">✓ Terminar</button>
+    <button id="btn_camino_cancel" style="width:40%;padding:8px;border:none;border-radius:8px;background:#eee;color:#111;cursor:pointer">✕ Cancelar</button>
+  </div>
   <div class="leyenda">
     <div><span class="pt" style="background:#111"></span>Campo (cargado por vos)</div>
+    <div><span class="pt" style="background:#1664c0"></span>Camino marcado por vos</div>
     <div><span class="pt" style="background:#1a7f37"></span>Planta verificada</div>
     <div><span class="pt" style="background:#2b7fff"></span>Planta confianza alta</div>
     <div><span class="pt" style="background:#e8a800"></span>Planta media / baja</div>
@@ -245,15 +252,78 @@ mapa.on('click', async e => {
   }catch(err){ alert('Error guardando el campo.'); }
 });
 
+// --- Caminos marcados por el usuario (líneas guardadas en el servidor)
+async function toggleCaminosU(){
+  const el = document.getElementById('c_caminos_u');
+  if (capas.caminosU){ mapa.removeLayer(capas.caminosU); delete capas.caminosU; }
+  if (!el.checked) return;
+  try{
+    const r = await fetch('caminos_usuario.geojson'); if(!r.ok) throw 0;
+    const gj = await r.json();
+    capas.caminosU = L.geoJSON(gj, {
+      style:{ color:'#1664c0', weight:4, opacity:.9 },
+      onEachFeature:(f,l)=>{ const p=f.properties||{};
+        l.bindPopup('<div class="popup"><b>'+esc(p.nombre||'Camino')+'</b><br>'
+          +(p.km?p.km+' km<br>':'')
+          +'<a href="#" onclick="borrarCamino('+(p.id||0)+');return false">borrar</a></div>'); }
+    }).addTo(mapa);
+  }catch(e){ /* todavía no hay caminos marcados */ }
+}
+async function borrarCamino(id){
+  if(!id || !confirm('¿Borrar este camino?')) return;
+  try{ await fetch('api/camino/borrar',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({id})}); mapa.closePopup(); toggleCaminosU(); }
+  catch(e){ alert('No se pudo borrar.'); }
+}
+window.borrarCamino = borrarCamino;
+
+// modo "marcar camino": un clic por cada punto donde dobla
+let modoCamino = false, vertices = [], lineaTmp = null;
+const marcasTmp = L.layerGroup().addTo(mapa);
+const btnCamino = document.getElementById('btn_camino');
+const accionesCamino = document.getElementById('camino_acciones');
+btnCamino.onclick = () => {
+  modoCamino = true; vertices = [];
+  if (lineaTmp){ mapa.removeLayer(lineaTmp); lineaTmp = null; } marcasTmp.clearLayers();
+  btnCamino.style.display = 'none'; accionesCamino.style.display = 'block';
+  mapa.getContainer().style.cursor = 'crosshair';
+};
+function finCamino(guardar){
+  mapa.getContainer().style.cursor = '';
+  btnCamino.style.display = 'block'; accionesCamino.style.display = 'none';
+  const puntos = vertices.slice(); modoCamino = false; vertices = [];
+  if (lineaTmp){ mapa.removeLayer(lineaTmp); lineaTmp = null; } marcasTmp.clearLayers();
+  if (!guardar) return;
+  if (puntos.length < 2){ alert('Marcá al menos 2 puntos del camino.'); return; }
+  const nombre = prompt('Nombre del camino (opcional):') || '';
+  const coords = puntos.map(ll => [ll.lng, ll.lat]);
+  fetch('api/camino', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ nombre, coords }) })
+    .then(r=>r.json()).then(j=>{ if(j.ok){ document.getElementById('c_caminos_u').checked=true; toggleCaminosU(); }
+      else alert('No se pudo guardar: '+(j.error||'')); })
+    .catch(()=>alert('Error guardando el camino.'));
+}
+document.getElementById('btn_camino_fin').onclick = () => finCamino(true);
+document.getElementById('btn_camino_cancel').onclick = () => finCamino(false);
+mapa.on('click', e => {
+  if (!modoCamino) return;
+  vertices.push(e.latlng);
+  marcasTmp.addLayer(L.circleMarker(e.latlng, {radius:4, color:'#1664c0', fillColor:'#fff', fillOpacity:1, weight:2}));
+  if (lineaTmp) lineaTmp.setLatLngs(vertices);
+  else lineaTmp = L.polyline(vertices, {color:'#1664c0', weight:4, dashArray:'6 4'}).addTo(mapa);
+});
+
 document.getElementById('c_puertos').onchange = togglePuertos;
 document.getElementById('sel_prov').onchange = cargarCruces;
 document.getElementById('c_solo_rr').onchange = cargarCruces;
 document.getElementById('c_caminos').onchange = toggleCaminos;
 document.getElementById('c_campos').onchange = toggleCampos;
+document.getElementById('c_caminos_u').onchange = toggleCaminosU;
 
 togglePlantas();
 togglePuertos();
 toggleCampos();
+toggleCaminosU();
 </script>
 </body>
 </html>

@@ -62,6 +62,59 @@ def borrar_campo(cid):
         return antes - len(fc["features"])
 
 
+CAMINOS_USU = os.path.join(DIR_SALIDA, "caminos_usuario.geojson")
+
+
+def _cargar(path):
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:  # noqa
+            pass
+    return {"type": "FeatureCollection", "features": []}
+
+
+def _hav_km(lon1, lat1, lon2, lat2):
+    import math
+    R = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    a = (math.sin((p2 - p1) / 2) ** 2
+         + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lon2 - lon1) / 2) ** 2)
+    return 2 * R * math.asin(math.sqrt(a))
+
+
+def guardar_camino(nombre, coords):
+    largo = 0.0
+    for (lo1, la1), (lo2, la2) in zip(coords, coords[1:]):
+        largo += _hav_km(lo1, la1, lo2, la2)
+    with _LOCK:
+        fc = _cargar(CAMINOS_USU)
+        nuevo_id = max([f.get("properties", {}).get("id", 0) for f in fc["features"]] + [0]) + 1
+        feat = {"type": "Feature",
+                "geometry": {"type": "LineString", "coordinates": coords},
+                "properties": {"id": nuevo_id, "nombre": nombre, "km": round(largo, 2),
+                               "creado": time.strftime("%Y-%m-%d %H:%M")}}
+        fc["features"].append(feat)
+        tmp = CAMINOS_USU + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(fc, f, ensure_ascii=False)
+        os.replace(tmp, CAMINOS_USU)
+        return feat
+
+
+def borrar_camino(cid):
+    with _LOCK:
+        fc = _cargar(CAMINOS_USU)
+        antes = len(fc["features"])
+        fc["features"] = [f for f in fc["features"] if f.get("properties", {}).get("id") != cid]
+        tmp = CAMINOS_USU + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(fc, f, ensure_ascii=False)
+        os.replace(tmp, CAMINOS_USU)
+        return antes - len(fc["features"])
+
+
 def buscar(q):
     q = q.lower()
     for ruta in sorted(glob.glob(os.path.join(DIR_SALIDA, "*.csv"))
@@ -148,6 +201,20 @@ class Manejador(SimpleHTTPRequestHandler):
             return self._json({"ok": True, "feature": feat})
         if u.path == "/api/campo/borrar":
             n = borrar_campo(cuerpo.get("id"))
+            return self._json({"ok": True, "borrados": n})
+        if u.path == "/api/camino":
+            coords = cuerpo.get("coords")
+            try:
+                coords = [[float(c[0]), float(c[1])] for c in coords]
+            except Exception:  # noqa
+                return self._json({"ok": False, "error": "coords inválidas"}, 400)
+            if len(coords) < 2:
+                return self._json({"ok": False, "error": "mínimo 2 puntos"}, 400)
+            nombre = (str(cuerpo.get("nombre") or "")).strip()[:120] or "Camino sin nombre"
+            feat = guardar_camino(nombre, coords)
+            return self._json({"ok": True, "feature": feat})
+        if u.path == "/api/camino/borrar":
+            n = borrar_camino(cuerpo.get("id"))
             return self._json({"ok": True, "borrados": n})
         self._json({"ok": False, "error": "ruta no encontrada"}, 404)
 
