@@ -88,9 +88,12 @@ class Paso1(osmium.SimpleHandler):
 
     def relation(self, r):
         t = r.tags
-        if t.get("boundary") != "administrative":
-            return
+        # algunas relaciones de partido no llevan boundary=administrative en la
+        # relación (está en los ways); basta admin_level + nombre.
         if t.get("admin_level") not in NIVELES_PARTIDO:
+            return
+        es_admin = (t.get("boundary") == "administrative" or t.get("type") == "boundary")
+        if not es_admin:
             return
         nn = normnombre(t.get("name", ""))
         if not any(v == nn or v in nn for v in self.variantes):
@@ -218,7 +221,7 @@ def main():
     p2.apply_file(PBF, locations=True, idx="flex_mem")
 
     prov_prep = prep(p1.provincia)
-    elegido, nombre = None, None
+    en_prov = []   # (area, poly, nombre, lvl)
     for rel in p1.relaciones:
         poly = construir_poligono(rel, p2.geom)
         if poly is None or poly.is_empty:
@@ -226,13 +229,19 @@ def main():
             continue
         c = poly.centroid
         dentro = prov_prep.contains(c)
-        log(f"  '{rel['name']}' (lvl {rel['lvl']}): área≈{area_km2(poly):.0f} km², "
+        ak = area_km2(poly)
+        log(f"  '{rel['name']}' (lvl {rel['lvl']}): área≈{ak:.0f} km², "
             f"centroide={c.y:.3f},{c.x:.3f}, en {PROVINCIA}={dentro}")
-        if dentro and elegido is None:
-            elegido, nombre = poly, rel["name"]
-    if elegido is None:
+        if dentro:
+            en_prov.append((ak, poly, rel["name"], rel["lvl"]))
+    if not en_prov:
         log(f"Ninguna relación {variantes} cae dentro de {PROVINCIA}.")
         sys.exit(1)
+    # el partido es el polígono más grande dentro de la provincia (la ciudad es chica)
+    en_prov.sort(key=lambda x: -x[0])
+    a_km2, elegido, nombre, lvl_el = en_prov[0]
+    log(f"Partido elegido: '{nombre}' (lvl {lvl_el}) — área ≈ {a_km2:.0f} km²")
+    a_km2 = area_km2(elegido)
     a_km2 = area_km2(elegido)
     log(f"Partido elegido: '{nombre}' — área ≈ {a_km2:.0f} km²")
 
