@@ -173,12 +173,20 @@ def main():
         f"{lim.fallas} fallas de ensamblado)")
     # dump a archivo para diagnóstico (fetcheable por HTTP)
     try:
+        claves = ("mayo", "veinti", "saladillo", "monte", "olavarr", "lavalle", "bragado")
+        interes = [{"nombre": nom, "lvl": lvl,
+                    "cent_lat": round(g.centroid.y, 3), "cent_lon": round(g.centroid.x, 3),
+                    "en_prov": prov_prep.contains(g.centroid)}
+                   for nom, lvl, g in lim.partidos if any(c in normnombre(nom) for c in claves)]
+        prov_cent = lim.provincia.centroid
         with open(os.path.join(DIR_SALIDA, "caminos_debug.json"), "w", encoding="utf-8") as f:
-            json.dump({"en_prov": sorted(f"[{lvl}] {nom}" for nom, lvl, g in en_prov),
-                       "total_partidos": len(lim.partidos), "fallas": lim.fallas}, f,
-                      ensure_ascii=False, indent=1)
-    except Exception:  # noqa
-        pass
+            json.dump({"total_areas": len(lim.partidos), "en_prov_count": len(en_prov),
+                       "fallas": lim.fallas,
+                       "prov_centroide": [round(prov_cent.y, 3), round(prov_cent.x, 3)],
+                       "prov_area_km2": round(area_km2(lim.provincia), 0),
+                       "coincidencias": interes}, f, ensure_ascii=False, indent=1)
+    except Exception as e:  # noqa
+        log(f"  no se pudo escribir debug: {e}")
     pistas = sorted({f"{nom} (lvl {lvl})" for nom, lvl, g in en_prov if "mayo" in normnombre(nom)})
     if pistas:
         log("  con 'mayo': " + "; ".join(pistas))
