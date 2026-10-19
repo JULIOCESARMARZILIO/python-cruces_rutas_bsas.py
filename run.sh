@@ -22,12 +22,14 @@ python secuencias_rutas.py || true
 if [ -n "$CALC_CAMINOS" ]; then
   python caminos_partido.py "$CALC_CAMINOS" || echo "caminos_partido.py terminó con error (se sigue igual)"
 fi
-cp "$(dirname "$0")/mapa.html" "$DIR_SALIDA/" 2>/dev/null || cp /app/mapa.html "$DIR_SALIDA/" 2>/dev/null || true
+for H in mapa.html mapa_25_de_mayo.html; do
+  cp "$(dirname "$0")/$H" "$DIR_SALIDA/" 2>/dev/null || cp "/app/$H" "$DIR_SALIDA/" 2>/dev/null || true
+done
 cd "$DIR_SALIDA"
 {
   echo '<!doctype html><meta charset="utf-8"><title>Cruces de rutas, silos y puertos</title>'
   echo '<body style="font-family:sans-serif;padding:2em"><h2>Cruces de rutas, silos y puertos</h2>'
-  echo '<p><a href="mapa.html"><b>Mapa interactivo</b></a> · <a href="rutas/">Secuencia de cruces por ruta</a> · <a href="buscar">Buscar un nombre</a>. CSV para Excel; GeoJSON para QGIS / Google Earth.</p><ul>'
+  echo '<p><a href="mapa.html"><b>Mapa interactivo</b></a> · <a href="mapa_25_de_mayo.html"><b>Caminos rurales 25 de Mayo</b></a> · <a href="rutas/">Secuencia de cruces por ruta</a> · <a href="buscar">Buscar un nombre</a>. CSV para Excel; GeoJSON para QGIS / Google Earth.</p><ul>'
   for f in plantas_sisa.csv plantas_sisa.geojson cruces_*.csv cruces_*.geojson tramos_*.csv red_rutas.json silos_puertos.csv silos_puertos.geojson silos_google.csv silos_google.geojson caminos_*.geojson caminos_*_resumen.json resumen.json; do
     [ -f "$f" ] && echo "<li><a href=\"$f\" download>$f</a></li>"
   done

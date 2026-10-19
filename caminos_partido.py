@@ -24,7 +24,7 @@ import unicodedata
 
 import osmium
 from shapely import wkb
-from shapely.geometry import LineString, Point
+from shapely.geometry import LineString, Point, mapping
 from shapely.ops import polygonize, unary_union
 from shapely.prepared import prep
 
@@ -286,6 +286,12 @@ def main():
         json.dump(resumen, f, ensure_ascii=False, indent=1)
     with open(os.path.join(DIR_SALIDA, f"caminos_{slug}.geojson"), "w", encoding="utf-8") as f:
         json.dump({"type": "FeatureCollection", "features": cam.features}, f, ensure_ascii=False)
+    # polígono del partido (para dibujarlo y encuadrar el mapa)
+    with open(os.path.join(DIR_SALIDA, f"caminos_{slug}_limite.geojson"), "w", encoding="utf-8") as f:
+        json.dump({"type": "FeatureCollection", "features": [{
+            "type": "Feature", "geometry": mapping(elegido),
+            "properties": {"partido": nombre, "area_km2": round(a_km2, 1)}}]},
+            f, ensure_ascii=False)
 
     log("RESUMEN " + json.dumps(resumen, ensure_ascii=False))
     log(f"Caminos rurales (track+unclassified+residential): {km_rurales:.1f} km")
