@@ -172,14 +172,17 @@ def main():
         log("  con 'mayo': " + "; ".join(pistas))
     elegido = None
     for nom, lvl, g in en_prov:
-        if normnombre(nom) in lim.variantes:
+        nn = normnombre(nom)
+        if nn in lim.variantes or any(v in nn for v in lim.variantes):
             elegido = g
             nombre = nom
             log(f"  elegido: '{nom}' (lvl {lvl}) centroide={g.centroid.y:.3f},{g.centroid.x:.3f}")
             break
     if elegido is None:
         log(f"No se encontró el partido {variantes} dentro de {PROVINCIA} "
-            f"(de {len(en_prov)} partidos).")
+            f"(de {len(en_prov)} partidos). Nombres disponibles:")
+        for nom, lvl, g in sorted(en_prov, key=lambda x: x[0]):
+            log(f"    [{lvl}] {nom}")
         sys.exit(1)
     a_km2 = area_km2(elegido)
     log(f"  partido elegido: área ≈ {a_km2:.0f} km²")
