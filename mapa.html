@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa - Cruces, plantas, silos y puertos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+  #mapa { position: absolute; inset: 0; }
+  #panel {
+    position: absolute; top: 10px; left: 10px; z-index: 1000;
+    background: rgba(255,255,255,.95); color: #111; padding: 12px 14px;
+    border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+    max-width: 290px; max-height: 90vh; overflow:auto; font-size: 14px;
+  }
+  #panel h1 { font-size: 15px; margin: 0 0 8px; }
+  #panel label { display:block; margin: 4px 0; cursor: pointer; }
+  #panel select { width: 100%; margin-top: 4px; padding: 4px; }
+  .leyenda { margin-top: 10px; font-size: 12px; border-top: 1px solid #ddd; padding-top: 8px; }
+  .pt { display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:5px; vertical-align:middle; border:1px solid #0003; }
+  #cargando { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); z-index:1000;
+    background:#111b; color:#fff; padding:6px 12px; border-radius:6px; font-size:13px; display:none; }
+  .popup b { color:#111; }
+  a { color: #0a58ca; }
+</style>
+</head>
+<body>
+<div id="mapa"></div>
+<div id="cargando">Cargando…</div>
+<div id="panel">
+  <h1>Capas</h1>
+  <label><input type="checkbox" id="c_plantas" checked> Plantas SISA</label>
+  <label><input type="checkbox" id="c_silos"> Silos / acopio (OSM)</label>
+  <label><input type="checkbox" id="c_puertos" checked> Puertos</label>
+  <label>Cruces de ruta por provincia:
+    <select id="sel_prov">
+      <option value="">— ninguna —</option>
+      <option value="buenos_aires">Buenos Aires</option>
+      <option value="santa_fe">Santa Fe</option>
+      <option value="entre_rios">Entre Ríos</option>
+      <option value="cordoba">Córdoba</option>
+      <option value="la_pampa">La Pampa</option>
+      <option value="santiago_del_estero">Santiago del Estero</option>
+    </select>
+  </label>
+  <label style="margin-left:18px"><input type="checkbox" id="c_solo_rr" checked> solo cruces ruta×ruta</label>
+  <div class="leyenda">
+    <div><span class="pt" style="background:#1a7f37"></span>Planta verificada</div>
+    <div><span class="pt" style="background:#2b7fff"></span>Planta confianza alta</div>
+    <div><span class="pt" style="background:#e8a800"></span>Planta media / baja</div>
+    <div><span class="pt" style="background:#8a3ffc"></span>Puerto</div>
+    <div><span class="pt" style="background:#999"></span>Silo / acopio OSM</div>
+    <div><span class="pt" style="background:#d12"></span>Cruce de ruta</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<script>
+const mapa = L.map('mapa').setView([-35.5, -60.5], 7);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, attribution: '© OpenStreetMap'
+}).addTo(mapa);
+
+const cargando = document.getElementById('cargando');
+function mostrarCarga(v){ cargando.style.display = v ? 'block' : 'none'; }
+
+function esc(s){ return (s==null?'':String(s)).replace(/[<>&]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+function punto(color, r){
+  return {radius:r||5, color:'#0006', weight:1, fillColor:color, fillOpacity:.9};
+}
+function colorPlanta(p){
+  if (p.confianza==='verificada') return '#1a7f37';
+  if (p.confianza==='alta') return '#2b7fff';
+  return '#e8a800';
+}
+function popupProps(p, titulo){
+  let h = '<div class="popup"><b>'+esc(titulo)+'</b><br>';
+  for (const k in p){
+    if (p[k]==='' || p[k]==null) continue;
+    if (k==='google_maps' || k==='ruta_maps')
+      h += '<a href="'+esc(p[k])+'" target="_blank">ver en Google Maps</a><br>';
+    else h += esc(k)+': '+esc(p[k])+'<br>';
+  }
+  return h+'</div>';
+}
+
+const capas = {};   // id -> layer
+async function cargarGeo(id, archivo, hacerMarcador, usarCluster){
+  if (capas[id]){ mapa.removeLayer(capas[id]); delete capas[id]; }
+  mostrarCarga(true);
+  try{
+    const r = await fetch(archivo);
+    if (!r.ok) throw new Error(r.status);
+    const gj = await r.json();
+    const cont = usarCluster ? L.markerClusterGroup({chunkedLoading:true, maxClusterRadius:50}) : L.layerGroup();
+    for (const f of gj.features){
+      if (!f.geometry) continue;
+      const [lon, lat] = f.geometry.coordinates;
+      const m = hacerMarcador(f.properties||{}, lat, lon);
+      if (m) cont.addLayer(m);
+    }
+    capas[id] = cont; mapa.addLayer(cont);
+  }catch(e){ console.warn('No se pudo cargar', archivo, e); }
+  mostrarCarga(false);
+}
+
+// --- Plantas SISA
+function togglePlantas(){
+  const el = document.getElementById('c_plantas');
+  if (!el.checked){ if(capas.plantas){mapa.removeLayer(capas.plantas);delete capas.plantas;} return; }
+  cargarGeo('plantas', 'plantas_sisa.geojson', (p,lat,lon)=>{
+    const m = L.circleMarker([lat,lon], punto(colorPlanta(p),6));
+    m.bindPopup(popupProps(p, p.titular||p.nombre_google||'Planta'));
+    return m;
+  }, true);
+}
+// --- Silos OSM
+function toggleSilos(){
+  const el = document.getElementById('c_silos');
+  if (!el.checked){ if(capas.silos){mapa.removeLayer(capas.silos);delete capas.silos;} return; }
+  cargarGeo('silos', 'silos_puertos.geojson', (p,lat,lon)=>{
+    if (p.categoria!=='silos/acopio') return null;
+    const m = L.circleMarker([lat,lon], punto('#999',4));
+    m.bindPopup(popupProps(p, p.nombre||'Silo / acopio'));
+    return m;
+  }, true);
+}
+// --- Puertos
+function togglePuertos(){
+  const el = document.getElementById('c_puertos');
+  if (!el.checked){ if(capas.puertos){mapa.removeLayer(capas.puertos);delete capas.puertos;} return; }
+  cargarGeo('puertos', 'silos_puertos.geojson', (p,lat,lon)=>{
+    if (p.categoria!=='puerto') return null;
+    const m = L.circleMarker([lat,lon], punto('#8a3ffc',6));
+    m.bindPopup(popupProps(p, p.nombre||'Puerto'));
+    return m;
+  }, true);
+}
+// --- Cruces por provincia
+function cargarCruces(){
+  const prov = document.getElementById('sel_prov').value;
+  const soloRR = document.getElementById('c_solo_rr').checked;
+  if (capas.cruces){ mapa.removeLayer(capas.cruces); delete capas.cruces; }
+  if (!prov) return;
+  cargarGeo('cruces', 'cruces_'+prov+'.geojson', (p,lat,lon)=>{
+    if (soloRR && p.tipo!=='ruta-ruta') return null;
+    const m = L.circleMarker([lat,lon], punto('#d12', p.tipo==='ruta-ruta'?5:3));
+    m.bindPopup(popupProps(p, (p.ruta||'')+' × '+(p.cruza_con||'')));
+    return m;
+  }, true);
+}
+
+document.getElementById('c_plantas').onchange = togglePlantas;
+document.getElementById('c_silos').onchange = toggleSilos;
+document.getElementById('c_puertos').onchange = togglePuertos;
+document.getElementById('sel_prov').onchange = cargarCruces;
+document.getElementById('c_solo_rr').onchange = cargarCruces;
+
+togglePlantas();
+togglePuertos();
+</script>
+</body>
+</html>
