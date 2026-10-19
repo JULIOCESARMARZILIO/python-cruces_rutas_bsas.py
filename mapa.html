@@ -70,8 +70,13 @@ const baseSat = L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 19, attribution: 'Imágenes © Esri'
 });
+// caminos/rutas transparentes para superponer sobre el satélite
+const refCaminos = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 19, attribution: 'Esri' });
+const satCaminos = L.layerGroup([baseSat, refCaminos]);
 L.control.layers(
-  { 'Mapa': baseMapa, 'Satélite': baseSat },
+  { 'Mapa': baseMapa, 'Satélite': baseSat, 'Satélite + caminos': satCaminos },
   {}, { position: 'topright', collapsed: false }
 ).addTo(mapa);
 
