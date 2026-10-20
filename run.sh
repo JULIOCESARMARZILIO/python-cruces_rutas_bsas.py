@@ -6,7 +6,10 @@ export DIR_DATOS=/data
 export DIR_SALIDA=/data/salida
 mkdir -p "$DIR_SALIDA"
 if [ "$FORZAR" = "1" ] || [ ! -f "$DIR_SALIDA/resumen.json" ]; then
-  rm -f "$DIR_SALIDA"/*.csv "$DIR_SALIDA"/*.geojson "$DIR_SALIDA"/resumen.json
+  # lo que cargó el usuario (campos y caminos) no se borra: ahora vive en /data/usuario.db y estos .geojson son la copia vieja
+  for f in "$DIR_SALIDA"/*.csv "$DIR_SALIDA"/*.geojson "$DIR_SALIDA"/resumen.json; do
+    case "$(basename "$f")" in campos.geojson|caminos_usuario.geojson) ;; *) rm -f "$f" ;; esac
+  done
   python procesar_osm.py
 fi
 # capa de Google Places (si hay clave); reanuda si se cortó
@@ -22,12 +25,11 @@ python secuencias_rutas.py || true
 if [ -n "$CALC_CAMINOS" ]; then
   python caminos_partido.py "$CALC_CAMINOS" || echo "caminos_partido.py terminó con error (se sigue igual)"
 fi
-for H in mapa.html mapa_25_de_mayo.html marcar.html; do
+for H in mapa.html mapa_25_de_mayo.html marcar.html editor_caminos.js; do
   cp "$(dirname "$0")/$H" "$DIR_SALIDA/" 2>/dev/null || cp "/app/$H" "$DIR_SALIDA/" 2>/dev/null || true
 done
-# archivo de campos cargados por el usuario (no pisar si ya existe)
-[ -f "$DIR_SALIDA/campos.geojson" ] || echo '{"type":"FeatureCollection","features":[]}' > "$DIR_SALIDA/campos.geojson"
-[ -f "$DIR_SALIDA/caminos_usuario.geojson" ] || echo '{"type":"FeatureCollection","features":[]}' > "$DIR_SALIDA/caminos_usuario.geojson"
+# campos y caminos del usuario: los sirve servidor.py desde la base /data/usuario.db (la primera vez pasa ahí
+# lo que hubiera en campos.geojson y caminos_usuario.geojson)
 cd "$DIR_SALIDA"
 {
   echo '<!doctype html><meta charset="utf-8"><title>Cruces de rutas, silos y puertos</title>'

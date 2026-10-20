@@ -49,11 +49,16 @@
   <div class="leyenda">
     <div><span class="ln" style="border-color:#b02a00"></span>Caminos rurales (tierra)</div>
     <div><span class="ln" style="border-color:#1664c0"></span>Rutas y pavimento</div>
+    <div><span class="ln" style="border-color:#0a9e4a;border-top-width:4px"></span>Marcados o corregidos por vos</div>
     <div><span class="ln" style="border-color:#6b3fa0;border-top-style:dashed"></span>Límite del partido</div>
   </div>
+  <div id="propios" class="sub" style="margin-top:8px"></div>
+  <button id="btn_camino" style="width:100%;margin-top:8px;padding:9px;border:none;border-radius:8px;background:#0a9e4a;color:#fff;font-weight:600;cursor:pointer;font-size:14px">➕ Marcar camino que falta</button>
+  <div class="sub" style="margin-top:6px">Para corregir un camino, tocalo y elegí «mover puntos». Se guarda en el servidor.</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="editor_caminos.js"></script>
 <script>
 const mapa = L.map('mapa');
 const baseMapa = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -80,19 +85,22 @@ async function init(){
     } else { mapa.setView([-35.43,-60.17], 10); }
   }catch(e){ mapa.setView([-35.43,-60.17], 10); }
 
-  // caminos
+  // caminos de OSM y los marcados o corregidos por el usuario (editables)
   try{
-    const r = await fetch('caminos_25_de_mayo.geojson');
-    const gj = await r.json();
-    L.geoJSON(gj, {
-      style: f => RURAL.has(f.properties.highway)
+    const red = capasDeCaminos(mapa, {
+      osm: 'caminos_25_de_mayo.geojson',
+      estiloOsm: f => RURAL.has(f.properties.highway)
         ? { color:'#b02a00', weight:1.2, opacity:.85 }
         : { color:'#1664c0', weight:1.8, opacity:.9 },
-      onEachFeature: (f,l)=>{
-        const p=f.properties||{};
-        l.bindPopup((p.nombre||p.highway)+(p.ref?(' ('+p.ref+')'):'')+' — '+fmt(p.km)+' km');
-      }
-    }).addTo(mapa);
+      alCambiar: ({ usuario, ocultos }) => {
+        const km = usuario.reduce((a, f) => a + (f.properties.km || 0), 0);
+        document.getElementById('propios').textContent = usuario.length || ocultos
+          ? 'Tuyos: ' + usuario.length + ' camino(s), ' + fmt(km) + ' km' + (ocultos ? ' · ' + ocultos + ' tramo(s) de OSM corregidos o dados de baja' : '')
+          : 'Todavía no marcaste ni corregiste caminos.';
+      },
+    });
+    await red.recargar();
+    document.getElementById('btn_camino').onclick = () => red.nuevo();
   }catch(e){ console.warn('caminos', e); }
 
   // resumen (panel)

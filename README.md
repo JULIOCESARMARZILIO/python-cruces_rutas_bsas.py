@@ -15,6 +15,8 @@ Salida: `cruces_<provincia>.csv/.geojson` y `silos_puertos.csv/.geojson`.
 
 ## Railway
 `run.sh` usa el volumen `/data`, corre el procesador y sirve los resultados por HTTP en `$PORT`.
+Los campos y caminos que se marcan o corrigen en los mapas se guardan en la base SQLite `/data/usuario.db`
+(variable `DB_USUARIO` para cambiarla), fuera de la salida: un recálculo con `FORZAR=1` no los borra.
 Poner la variable `FORZAR=1` para recalcular.
 
 Datos © colaboradores de OpenStreetMap (ODbL).
