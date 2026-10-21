@@ -46,9 +46,17 @@
   <div class="total" id="totalRural">— <small>km de caminos rurales</small></div>
   <div id="totalRed" class="sub"></div>
   <table id="tabla"></table>
+  <div class="leyenda" style="border-top:none;padding-top:0">
+    <label><input type="checkbox" id="c_aguas" checked> Ríos, arroyos y canales</label><br>
+    <label><input type="checkbox" id="c_cx_agua" checked> Cruces camino × arroyo <span id="n_cx_agua"></span></label><br>
+    <label><input type="checkbox" id="c_cx_ruta"> Empalmes camino × ruta <span id="n_cx_ruta"></span></label><br>
+    <label><input type="checkbox" id="c_parcelas" checked> Parcelas dibujadas <span id="n_parc"></span></label>
+    <div class="sub" style="margin-top:4px"><a href="marcar.html">Dibujar parcelas →</a></div>
+  </div>
   <div class="leyenda">
     <div><span class="ln" style="border-color:#b02a00"></span>Caminos rurales (tierra)</div>
     <div><span class="ln" style="border-color:#1664c0"></span>Rutas y pavimento</div>
+    <div><span class="ln" style="border-color:#0a8fd0"></span>Ríos y arroyos</div>
     <div><span class="ln" style="border-color:#6b3fa0;border-top-style:dashed"></span>Límite del partido</div>
   </div>
 </div>
@@ -66,6 +74,42 @@ L.control.layers({ 'Mapa': baseMapa, 'Satélite': baseSat }, {},
 
 const RURAL = new Set(['track','unclassified','residential']);
 const cargando = document.getElementById('cargando');
+const capas = {};
+function etiqueta(p){ return '<b>'+(p.nombre||p.waterway||'')+'</b>'; }
+async function geo(url){
+  try{ const r = await fetch(url); if (!r.ok) return null; return await r.json(); }catch(e){ return null; }
+}
+async function cargarCapas(){
+  const aguas = await geo('aguas_25_de_mayo.geojson');
+  if (aguas) capas.aguas = L.geoJSON(aguas, {
+    style: f => ({ color:'#0a8fd0', weight: f.properties.waterway==='river'?3:1.6, opacity:.9 }),
+    onEachFeature:(f,l)=>l.bindPopup(etiqueta(f.properties)||'Curso de agua') });
+  const cx = await geo('cruces_25_de_mayo.geojson');
+  if (cx){
+    const mk = tipo => L.geoJSON({type:'FeatureCollection',
+      features: cx.features.filter(f=>f.properties.tipo===tipo)}, {
+      pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:5,weight:1.5,color:'#fff',
+        fillColor: tipo==='camino_x_agua'?'#0a8fd0':'#e08a00', fillOpacity:1}),
+      onEachFeature:(f,l)=>l.bindPopup('<b>'+f.properties.camino+'</b> cruza <b>'+f.properties.cruza+'</b>') });
+    capas.cx_agua = mk('camino_x_agua'); capas.cx_ruta = mk('camino_x_ruta');
+    document.getElementById('n_cx_agua').textContent = '('+capas.cx_agua.getLayers().length+')';
+    document.getElementById('n_cx_ruta').textContent = '('+capas.cx_ruta.getLayers().length+')';
+  }
+  const parc = await geo('parcelas.geojson');
+  if (parc){
+    capas.parcelas = L.geoJSON(parc, {
+      style:{ color:'#7a4b00', weight:2, fillColor:'#f3c14b', fillOpacity:.25 },
+      onEachFeature:(f,l)=>{ const p=f.properties;
+        l.bindPopup('<b>'+p.propietario+'</b>'+(p.hectareas?'<br>'+p.hectareas+' ha':'')
+          +(p.cuartel?'<br>Cuartel '+p.cuartel:'')); } });
+    document.getElementById('n_parc').textContent = '('+parc.features.length+')';
+  }
+  for (const [k,id] of [['aguas','c_aguas'],['cx_agua','c_cx_agua'],['cx_ruta','c_cx_ruta'],['parcelas','c_parcelas']]){
+    const cb = document.getElementById(id);
+    const act = () => { if (!capas[k]) return; cb.checked ? capas[k].addTo(mapa) : mapa.removeLayer(capas[k]); };
+    cb.onchange = act; act();
+  }
+}
 function fmt(n){ return (Math.round(n*10)/10).toLocaleString('es-AR'); }
 
 async function init(){
@@ -94,6 +138,8 @@ async function init(){
       }
     }).addTo(mapa);
   }catch(e){ console.warn('caminos', e); }
+
+  await cargarCapas();
 
   // resumen (panel)
   try{

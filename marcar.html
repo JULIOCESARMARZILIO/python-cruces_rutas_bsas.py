@@ -31,6 +31,7 @@
     <li>Con la herramienta de línea (izquierda) dibujá cada camino que falte; doble clic para terminarlo.</li>
     <li>Cuando tengas varios, tocá <b>Descargar</b> y mandame el archivo.</li>
   </ol>
+  <p style="margin:6px 0 0">Para <b>parcelas</b>: usá el polígono y, al cerrarlo, cargá propietario y hectáreas (se guarda en el servidor y aparece en el mapa de 25 de Mayo).</p>
   <div id="cuenta">Marcados: 0</div>
   <button id="bajar">⬇ Descargar lo marcado (GeoJSON)</button>
   <button id="limpiar" class="sec">Borrar todo</button>
@@ -52,14 +53,31 @@ const dibujado = new L.FeatureGroup().addTo(mapa);
 const draw = new L.Control.Draw({
   position:'topleft',
   draw: { polyline:{ shapeOptions:{ color:'#ff3b30', weight:4 } },
-          marker:true, polygon:false, rectangle:false, circle:false, circlemarker:false },
+          marker:true, polygon:{ shapeOptions:{ color:'#7a4b00', weight:2 } }, rectangle:false, circle:false, circlemarker:false },
   edit: { featureGroup: dibujado }
 });
 mapa.addControl(draw);
 
 const cuenta = document.getElementById('cuenta');
 function actualizar(){ cuenta.textContent = 'Marcados: ' + dibujado.getLayers().length; }
-mapa.on(L.Draw.Event.CREATED, e => { dibujado.addLayer(e.layer); actualizar(); });
+mapa.on(L.Draw.Event.CREATED, async e => {
+  if (e.layerType === 'polygon'){
+    const propietario = prompt('Propietario de la parcela:');
+    if (propietario === null) return;
+    const ha = prompt('Hectáreas (opcional):') || '';
+    const cuartel = prompt('Cuartel (opcional, ej. XII):') || '';
+    const ring = e.layer.getLatLngs()[0].map(p => [p.lng, p.lat]);
+    try{
+      const r = await fetch('api/parcela', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ propietario, hectareas: ha, cuartel, ring }) });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error);
+      e.layer.bindPopup('<b>'+propietario+'</b>'+(ha?'<br>'+ha+' ha':''));
+      alert('Parcela guardada.');
+    }catch(err){ alert('No se pudo guardar en el servidor: '+err.message); }
+  }
+  dibujado.addLayer(e.layer); actualizar();
+});
 mapa.on('draw:deleted', actualizar);
 mapa.on('draw:edited', actualizar);
 

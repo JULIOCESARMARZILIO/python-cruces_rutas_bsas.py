@@ -197,6 +197,91 @@ class Caminos(osmium.SimpleHandler):
         })
 
 
+AGUAS = {"river", "stream", "canal", "drain", "ditch"}
+
+
+class Aguas(osmium.SimpleHandler):
+    """Rios, arroyos, canales y desagues dentro del partido."""
+
+    def __init__(self, poligono_prep):
+        super().__init__()
+        self.poly = poligono_prep
+        self.features = []
+
+    def way(self, w):
+        t = w.tags
+        ww = t.get("waterway")
+        if ww not in AGUAS:
+            return
+        coords = []
+        try:
+            for nd in w.nodes:
+                loc = nd.location
+                if loc.valid():
+                    coords.append((loc.lon, loc.lat))
+        except osmium.InvalidLocationError:
+            return
+        if len(coords) < 2:
+            return
+        if not any(self.poly.contains(Point(x, y)) for x, y in coords[::max(1, len(coords) // 5)]):
+            return
+        self.features.append({
+            "type": "Feature",
+            "geometry": {"type": "LineString",
+                         "coordinates": [[round(x, 6), round(y, 6)] for x, y in coords]},
+            "properties": {"waterway": ww, "nombre": t.get("name", "")},
+        })
+
+
+def _puntos(g):
+    if g.is_empty:
+        return []
+    if g.geom_type == "Point":
+        return [g]
+    if hasattr(g, "geoms"):
+        return [p for sub in g.geoms for p in _puntos(sub)]
+    return []
+
+
+def calcular_cruces(caminos, aguas):
+    """Puntos donde un camino rural cruza un curso de agua (alcantarilla/puente)
+    o empalma con una ruta RN/RP. Devuelve features Point."""
+    from shapely.strtree import STRtree
+    rurales, rutas = [], []
+    for f in caminos:
+        p = f["properties"]
+        geom = LineString(f["geometry"]["coordinates"])
+        if p["ruta"]:
+            rutas.append((geom, p))
+        elif p["highway"] in CAMINOS_RURALES:
+            rurales.append((geom, p))
+    out = []
+
+    def cruzar(lista_a, lista_b, tipo, nombre_b):
+        if not lista_a or not lista_b:
+            return
+        arbol = STRtree([g for g, _ in lista_b])
+        vistos = set()
+        for ga, pa in lista_a:
+            for i in arbol.query(ga):
+                gb, pb = lista_b[i]
+                for pt in _puntos(ga.intersection(gb)):
+                    clave = (round(pt.x, 5), round(pt.y, 5), tipo)
+                    if clave in vistos:
+                        continue
+                    vistos.add(clave)
+                    out.append({"type": "Feature",
+                                "geometry": {"type": "Point", "coordinates": [round(pt.x, 6), round(pt.y, 6)]},
+                                "properties": {"tipo": tipo,
+                                               "camino": pa.get("nombre") or pa.get("highway"),
+                                               "cruza": nombre_b(pb)}})
+
+    cruzar(rurales, [(LineString(f["geometry"]["coordinates"]), f["properties"]) for f in aguas],
+           "camino_x_agua", lambda p: p.get("nombre") or p.get("waterway"))
+    cruzar(rurales, rutas, "camino_x_ruta", lambda p: p.get("ref") or p.get("nombre"))
+    return out
+
+
 def main():
     slug = sys.argv[1] if len(sys.argv) > 1 else "25_de_mayo"
     variantes = PARTIDOS.get(slug)
@@ -267,6 +352,12 @@ def main():
     cam = Caminos(prep(elegido))
     cam.apply_file(PBF, locations=True, idx="flex_mem")
 
+    log("Pasada 4: rios, arroyos y canales dentro del partido...")
+    ag = Aguas(prep(elegido))
+    ag.apply_file(PBF, locations=True, idx="flex_mem")
+    cruces = calcular_cruces(cam.features, ag.features)
+    log(f"  {len(ag.features)} cursos de agua, {len(cruces)} cruces")
+
     km_total = sum(cam.km_por_tipo.values())
     km_rurales = sum(v for k, v in cam.km_por_tipo.items() if k in CAMINOS_RURALES)
     resumen = {
@@ -286,6 +377,10 @@ def main():
         json.dump(resumen, f, ensure_ascii=False, indent=1)
     with open(os.path.join(DIR_SALIDA, f"caminos_{slug}.geojson"), "w", encoding="utf-8") as f:
         json.dump({"type": "FeatureCollection", "features": cam.features}, f, ensure_ascii=False)
+    with open(os.path.join(DIR_SALIDA, f"aguas_{slug}.geojson"), "w", encoding="utf-8") as f:
+        json.dump({"type": "FeatureCollection", "features": ag.features}, f, ensure_ascii=False)
+    with open(os.path.join(DIR_SALIDA, f"cruces_{slug}.geojson"), "w", encoding="utf-8") as f:
+        json.dump({"type": "FeatureCollection", "features": cruces}, f, ensure_ascii=False)
     # polígono del partido (para dibujarlo y encuadrar el mapa)
     with open(os.path.join(DIR_SALIDA, f"caminos_{slug}_limite.geojson"), "w", encoding="utf-8") as f:
         json.dump({"type": "FeatureCollection", "features": [{

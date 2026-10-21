@@ -115,6 +115,41 @@ def borrar_camino(cid):
         return antes - len(fc["features"])
 
 
+PARCELAS = os.path.join(DIR_SALIDA, "parcelas.geojson")
+
+
+def _guardar_fc(path, fc):
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(fc, f, ensure_ascii=False)
+    os.replace(tmp, path)
+
+
+def guardar_parcela(propietario, hectareas, cuartel, ring):
+    if ring[0] != ring[-1]:
+        ring = ring + [ring[0]]
+    with _LOCK:
+        fc = _cargar(PARCELAS)
+        nuevo_id = max([f.get("properties", {}).get("id", 0) for f in fc["features"]] + [0]) + 1
+        feat = {"type": "Feature",
+                "geometry": {"type": "Polygon", "coordinates": [ring]},
+                "properties": {"id": nuevo_id, "propietario": propietario,
+                               "hectareas": hectareas, "cuartel": cuartel,
+                               "creado": time.strftime("%Y-%m-%d %H:%M")}}
+        fc["features"].append(feat)
+        _guardar_fc(PARCELAS, fc)
+        return feat
+
+
+def borrar_parcela(pid):
+    with _LOCK:
+        fc = _cargar(PARCELAS)
+        antes = len(fc["features"])
+        fc["features"] = [f for f in fc["features"] if f.get("properties", {}).get("id") != pid]
+        _guardar_fc(PARCELAS, fc)
+        return antes - len(fc["features"])
+
+
 def buscar(q):
     q = q.lower()
     for ruta in sorted(glob.glob(os.path.join(DIR_SALIDA, "*.csv"))
@@ -216,6 +251,22 @@ class Manejador(SimpleHTTPRequestHandler):
         if u.path == "/api/camino/borrar":
             n = borrar_camino(cuerpo.get("id"))
             return self._json({"ok": True, "borrados": n})
+        if u.path == "/api/parcela":
+            try:
+                ring = [[float(c[0]), float(c[1])] for c in cuerpo["ring"]]
+            except Exception:  # noqa
+                return self._json({"ok": False, "error": "ring inválido"}, 400)
+            if len(ring) < 3:
+                return self._json({"ok": False, "error": "mínimo 3 puntos"}, 400)
+            prop = (str(cuerpo.get("propietario") or "")).strip()[:120] or "Sin nombre"
+            try:
+                ha = float(cuerpo.get("hectareas")) if cuerpo.get("hectareas") not in (None, "") else None
+            except Exception:  # noqa
+                ha = None
+            cuartel = (str(cuerpo.get("cuartel") or "")).strip()[:10]
+            return self._json({"ok": True, "feature": guardar_parcela(prop, ha, cuartel, ring)})
+        if u.path == "/api/parcela/borrar":
+            return self._json({"ok": True, "borrados": borrar_parcela(cuerpo.get("id"))})
         self._json({"ok": False, "error": "ruta no encontrada"}, 404)
 
     def _json(self, obj, code=200):
