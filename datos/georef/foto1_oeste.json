@@ -1,0 +1,11 @@
+{
+  "foto": "foto 1 (zona oeste: Del Valle, Huetel, Agustin Mosconi), 1932x2576 px",
+  "metodo": "semejanza (escala + rotacion + traslacion) ajustada por minimos cuadrados con 3 pueblos",
+  "referencias": [
+    {"nombre": "Del Valle", "lat": -35.8994, "lon": -60.7305, "px": [316, 1230]},
+    {"nombre": "Huetel", "lat": -35.8241, "lon": -60.6422, "px": [902, 1217]},
+    {"nombre": "Agustin Mosconi", "lat": -35.7403, "lon": -60.5572, "px": [1565, 1166]}
+  ],
+  "resultado": {"metros_por_pixel": 18.8, "rotacion_grados": 45.4, "error_max_px": 17, "error_max_m": 320},
+  "verificacion": "foto1_oeste_verificacion.jpg: contorno del partido (magenta), caminos OSM (rojo/azul) y localidades (verde) proyectados sobre la foto"
+}
