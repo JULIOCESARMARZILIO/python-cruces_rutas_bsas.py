@@ -1,0 +1,16 @@
+tipo,nombre,donde_se_ve,nota
+arroyo,Ao. Vallimanca,limite sur (zona Luisa E. Videla / Gomez Alzaga),limite con Saladillo
+arroyo,Ao. La Union,sur (zona Estancia La Chilca),limite con Saladillo
+arroyo,Ao. Saladillo,sur-sureste (Lucas Monteverde / Las Tijeras),limite con Saladillo; ahi sale la ruta 51 hacia Saladillo y ruta 205
+arroyo,Ao. El Gato,sureste (Puertovitu S.A.),
+rio,Rio Salado,este (cuartel V),limite con Chivilcoy
+laguna,Lag. Las Chilcas,sur (Antiguas Estancias Don Roberto / La Chilca),
+laguna,Lag. de Todos los Santos,norte (cuartel VII),
+laguna,Las Verdes,suroeste (Sancti Espiritu S.A.),
+ruta,RP 51,diagonal 25 de Mayo - Saladillo / hacia Chivilcoy,
+ruta,RP 46,norte,hacia Bragado
+ruta,RP 40,noreste-este,
+ruta,RP 30,este,hacia Chivilcoy
+camino,Camino al Sur,oeste de 25 de Mayo,
+camino,a Hale,oeste (Del Valle),
+nota,Puentes,,el plano no los rotula como puentes: no hay datos en las fotos
