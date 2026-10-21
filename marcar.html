@@ -29,7 +29,7 @@
   <ol>
     <li>Elegí <b>Satélite</b> (arriba a la derecha).</li>
     <li>Con la herramienta de línea (izquierda) dibujá cada camino que falte; doble clic para terminarlo.</li>
-    <li>Cuando tengas varios, tocá <b>Descargar</b> y mandame el archivo.</li>
+    <li>Cada camino se guarda solo en el servidor. En rojo ves los de OpenStreetMap y en azul los que ya marcaste: dibujá lo que falta.</li>
   </ol>
   <p style="margin:6px 0 0">Para <b>parcelas</b>: usá el polígono y, al cerrarlo, cargá propietario y hectáreas (se guarda en el servidor y aparece en el mapa de 25 de Mayo).</p>
   <div id="cuenta">Marcados: 0</div>
@@ -76,8 +76,32 @@ mapa.on(L.Draw.Event.CREATED, async e => {
       alert('Parcela guardada.');
     }catch(err){ alert('No se pudo guardar en el servidor: '+err.message); }
   }
+  if (e.layerType === 'polyline'){
+    const nombre = prompt('Nombre del camino (opcional):') || '';
+    const coords = e.layer.getLatLngs().map(p => [p.lng, p.lat]);
+    try{
+      const r = await fetch('api/camino', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ nombre, coords }) });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error);
+      e.layer.bindPopup('<b>'+(nombre||'Camino')+'</b> — '+j.feature.properties.km+' km');
+    }catch(err){ alert('No se pudo guardar en el servidor (queda en este navegador): '+err.message); }
+  }
   dibujado.addLayer(e.layer); actualizar();
 });
+
+// capas de referencia: caminos de OpenStreetMap (rojo) y ya marcados (azul)
+async function refCapa(url, estilo, nombre){
+  try{
+    const r = await fetch(url); if (!r.ok) return;
+    const g = L.geoJSON(await r.json(), { style: estilo, interactive:false }).addTo(mapa);
+    capasRef.addOverlay(g, nombre);
+  }catch(e){}
+}
+const capasRef = L.control.layers({}, {}, { position:'topright', collapsed:false }).addTo(mapa);
+refCapa('caminos_25_de_mayo.geojson', f => ({ color:'#ff7a45', weight:1.2, opacity:.9 }), 'Caminos de OSM (rojo)');
+refCapa('caminos_usuario.geojson', f => ({ color:'#3aa0ff', weight:3 }), 'Ya marcados (azul)');
+refCapa('parcelas.geojson', f => ({ color:'#f3c14b', weight:2, fillOpacity:.1 }), 'Parcelas');
 mapa.on('draw:deleted', actualizar);
 mapa.on('draw:edited', actualizar);
 
