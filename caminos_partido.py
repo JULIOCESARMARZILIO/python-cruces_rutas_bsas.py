@@ -178,7 +178,9 @@ class Caminos(osmium.SimpleHandler):
             return
         if len(coords) < 2:
             return
-        if not self.poly.contains(Point(coords[0][0], coords[0][1])):
+        # se incluye la via si CUALQUIER tramo toca el partido (antes solo se miraba el
+        # primer nodo, y se perdian los caminos que arrancan fuera y entran al partido)
+        if not self.poly.intersects(LineString(coords)):
             return
         km = 0.0
         for (lon1, lat1), (lon2, lat2) in zip(coords, coords[1:]):
