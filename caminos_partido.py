@@ -235,6 +235,36 @@ class Aguas(osmium.SimpleHandler):
         })
 
 
+PLACES = {"city", "town", "village", "hamlet", "locality", "suburb", "isolated_dwelling"}
+
+
+class Localidades(osmium.SimpleHandler):
+    """Pueblos y parajes (place=*) dentro del partido: sirven de puntos de referencia
+    para ubicar el plano de campos."""
+
+    def __init__(self, poligono_prep):
+        super().__init__()
+        self.poly = poligono_prep
+        self.features = []
+
+    def node(self, n):
+        t = n.tags
+        pl = t.get("place")
+        if pl not in PLACES or not t.get("name"):
+            return
+        try:
+            lon, lat = n.location.lon, n.location.lat
+        except osmium.InvalidLocationError:
+            return
+        if not self.poly.contains(Point(lon, lat)):
+            return
+        self.features.append({
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [round(lon, 6), round(lat, 6)]},
+            "properties": {"nombre": t["name"], "place": pl},
+        })
+
+
 def _puntos(g):
     if g.is_empty:
         return []
@@ -358,6 +388,10 @@ def main():
     ag = Aguas(prep(elegido))
     ag.apply_file(PBF, locations=True, idx="flex_mem")
     cruces = calcular_cruces(cam.features, ag.features)
+    log("Pasada 5: localidades (place=*) dentro del partido...")
+    loc = Localidades(prep(elegido))
+    loc.apply_file(PBF, locations=True, idx="flex_mem")
+    log(f"  {len(loc.features)} localidades: " + ", ".join(sorted(f["properties"]["nombre"] for f in loc.features)))
     log(f"  {len(ag.features)} cursos de agua, {len(cruces)} cruces")
 
     km_total = sum(cam.km_por_tipo.values())
@@ -381,6 +415,8 @@ def main():
         json.dump({"type": "FeatureCollection", "features": cam.features}, f, ensure_ascii=False)
     with open(os.path.join(DIR_SALIDA, f"aguas_{slug}.geojson"), "w", encoding="utf-8") as f:
         json.dump({"type": "FeatureCollection", "features": ag.features}, f, ensure_ascii=False)
+    with open(os.path.join(DIR_SALIDA, f"localidades_{slug}.geojson"), "w", encoding="utf-8") as f:
+        json.dump({"type": "FeatureCollection", "features": loc.features}, f, ensure_ascii=False)
     with open(os.path.join(DIR_SALIDA, f"cruces_{slug}.geojson"), "w", encoding="utf-8") as f:
         json.dump({"type": "FeatureCollection", "features": cruces}, f, ensure_ascii=False)
     # polígono del partido (para dibujarlo y encuadrar el mapa)
