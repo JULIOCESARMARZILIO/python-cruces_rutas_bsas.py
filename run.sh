@@ -6,7 +6,9 @@ export DIR_DATOS=/data
 export DIR_SALIDA=/data/salida
 mkdir -p "$DIR_SALIDA"
 if [ "$FORZAR" = "1" ] || [ ! -f "$DIR_SALIDA/resumen.json" ]; then
-  rm -f "$DIR_SALIDA"/*.csv "$DIR_SALIDA"/*.geojson "$DIR_SALIDA"/resumen.json
+  # NO borrar lo cargado por el usuario (campos, caminos marcados, parcelas)
+  find "$DIR_SALIDA" -maxdepth 1 -type f \( -name '*.csv' -o -name '*.geojson' -o -name 'resumen.json' \) \
+    ! -name campos.geojson ! -name caminos_usuario.geojson ! -name parcelas.geojson -delete
   python procesar_osm.py
 fi
 # capa de Google Places (si hay clave); reanuda si se cortó
