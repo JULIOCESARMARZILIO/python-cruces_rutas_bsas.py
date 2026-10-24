@@ -36,7 +36,7 @@
   <h1>Capas</h1>
   <label><input type="checkbox" id="c_plantas" checked> Plantas SISA</label>
   <label><input type="checkbox" id="c_silos"> Silos / acopio (OSM)</label>
-  <label><input type="checkbox" id="c_puertos" checked> Puertos</label>
+  <label><input type="checkbox" id="c_puertos" checked> Puertos de granos (terminales)</label>
   <label>Cruces de ruta por provincia:
     <select id="sel_prov">
       <option value="">— ninguna —</option>
@@ -64,7 +64,7 @@
     <div><span class="pt" style="background:#1a7f37"></span>Planta verificada</div>
     <div><span class="pt" style="background:#2b7fff"></span>Planta confianza alta</div>
     <div><span class="pt" style="background:#e8a800"></span>Planta media / baja</div>
-    <div><span class="pt" style="background:#8a3ffc"></span>Puerto</div>
+    <div><span class="pt" style="background:#8a3ffc"></span>Terminal portuaria de granos</div>
     <div><span class="pt" style="background:#999"></span>Silo / acopio OSM</div>
     <div><span class="pt" style="background:#d12"></span>Cruce de ruta</div>
   </div>
@@ -156,16 +156,30 @@ function toggleSilos(){
     return m;
   }, true);
 }
-// --- Puertos
+// --- Puertos: terminales de granos ubicadas a mano sobre satélite (puertos_granos.geojson)
+function popupPuerto(p){
+  let h = '<div class="popup"><b>'+esc(p.terminal)+'</b><br>'+esc(p.empresa)+'<br>'
+    + esc(p.localidad)+', '+esc(p.provincia)+' · '+esc(p.tipo)+'<br>';
+  if (p.km_por_ruta) h += '<b>'+esc(p.km_por_ruta)+' km por ruta</b> desde '+esc(p.origen)
+    + (p.horas_camion ? ' (~'+esc(p.horas_camion)+' h de camión)' : '')+'<br>';
+  if (p.nombre_google) h += 'Google: '+esc(p.nombre_google)+' ('+esc(p.dist_google_m)+' m)<br>';
+  h += '<a href="'+esc(p.google_maps)+'" target="_blank">ver en Google Maps</a>';
+  if (p.como_llegar) h += ' · <a href="'+esc(p.como_llegar)+'" target="_blank">cómo llegar</a>';
+  return h+'</div>';
+}
+function iconoPuerto(){
+  return L.divIcon({className:'', html:'<div style="background:#8a3ffc;color:#fff;border:2px solid #fff;'
+    +'border-radius:50%;width:22px;height:22px;line-height:18px;text-align:center;font-size:13px;'
+    +'box-shadow:0 1px 4px #0008">⚓</div>', iconSize:[22,22], iconAnchor:[11,11]});
+}
 function togglePuertos(){
   const el = document.getElementById('c_puertos');
   if (!el.checked){ if(capas.puertos){mapa.removeLayer(capas.puertos);delete capas.puertos;} return; }
-  cargarGeo('puertos', 'silos_puertos.geojson', (p,lat,lon)=>{
-    if (p.categoria!=='puerto') return null;
-    const m = L.circleMarker([lat,lon], punto('#8a3ffc',6));
-    m.bindPopup(popupProps(p, p.nombre||'Puerto'));
+  cargarGeo('puertos', 'puertos_granos.geojson', (p,lat,lon)=>{
+    const m = L.marker([lat,lon], {icon: iconoPuerto(), title: p.terminal});
+    m.bindPopup(popupPuerto(p));
     return m;
-  }, true);
+  }, false);
 }
 // --- Cruces por provincia
 function cargarCruces(){

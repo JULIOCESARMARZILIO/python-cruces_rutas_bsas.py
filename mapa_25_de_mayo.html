@@ -58,7 +58,8 @@
     <label><input type="checkbox" id="c_catastro" checked> Caminos del catastro ARBA <span id="n_cat"></span></label><br>
     <label><input type="checkbox" id="c_arba"> Parcelas ARBA (tocá una para asignarla) <span id="n_arba"></span></label><br>
     <label><input type="checkbox" id="c_campos" checked> Campos ubicados <span id="n_campos"></span></label><br>
-    <label><input type="checkbox" id="c_parcelas" checked> Parcelas dibujadas <span id="n_parc"></span></label>
+    <label><input type="checkbox" id="c_parcelas" checked> Parcelas dibujadas <span id="n_parc"></span></label><br>
+    <label><input type="checkbox" id="c_puertos" checked> Puertos de granos <span id="n_puertos"></span></label>
     <div class="sub" style="margin-top:4px"><a href="marcar.html">Dibujar parcelas →</a> · <a href="campos_25_de_mayo.html">Tabla de propietarios →</a></div>
   </div>
   <div class="leyenda">
@@ -69,7 +70,9 @@
     <div><span class="ln" style="border-color:#1664c0"></span>Rutas y pavimento</div>
     <div><span class="ln" style="border-color:#0a8fd0"></span>Ríos y arroyos</div>
     <div><span class="ln" style="border-color:#6b3fa0;border-top-style:dashed"></span>Límite del partido</div>
+    <div>⚓ Terminal portuaria de granos (km por ruta desde 25 de Mayo)</div>
   </div>
+  <table id="tabla_puertos"></table>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
@@ -115,9 +118,30 @@ async function cargarCapas(){
           +(p.cuartel?'<br>Cuartel '+p.cuartel:'')); } });
     document.getElementById('n_parc').textContent = '('+parc.features.length+')';
   }
+  const pu = await geo('puertos_granos.geojson');
+  if (pu){
+    const esc = s => (s==null?'':String(s)).replace(/[<>&"]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+    const icono = L.divIcon({className:'', html:'<div style="background:#8a3ffc;color:#fff;border:2px solid #fff;'
+      +'border-radius:50%;width:22px;height:22px;line-height:18px;text-align:center;font-size:13px;'
+      +'box-shadow:0 1px 4px #0008">⚓</div>', iconSize:[22,22], iconAnchor:[11,11]});
+    capas.puertos = L.geoJSON(pu, {
+      pointToLayer:(f,ll)=>L.marker(ll,{icon:icono, title:f.properties.terminal}),
+      onEachFeature:(f,l)=>{ const p=f.properties;
+        l.bindPopup('<b>'+esc(p.terminal)+'</b><br>'+esc(p.empresa)+'<br>'+esc(p.localidad)+', '+esc(p.provincia)
+          +(p.km_por_ruta?'<br><b>'+esc(p.km_por_ruta)+' km por ruta</b>'+(p.horas_camion?' (~'+esc(p.horas_camion)+' h de camión)':''):'')
+          +'<br><a href="'+esc(p.google_maps)+'" target="_blank">ver en Google Maps</a>'
+          +(p.como_llegar?' · <a href="'+esc(p.como_llegar)+'" target="_blank">cómo llegar</a>':'')); } });
+    document.getElementById('n_puertos').textContent = '('+pu.features.length+')';
+    // los 8 más cercanos por ruta, en el panel
+    const t = document.getElementById('tabla_puertos');
+    const orden = pu.features.map(f=>f.properties).filter(p=>p.km_por_ruta!=='')
+      .sort((a,b)=>a.km_por_ruta-b.km_por_ruta).slice(0,8);
+    if (orden.length) t.innerHTML = '<tr><td class="k"><b>Puerto más cercano</b></td><td class="v"><b>km ruta</b></td></tr>'
+      + orden.map(p=>'<tr><td class="k">'+esc(p.terminal)+'</td><td class="v">'+fmt(p.km_por_ruta)+'</td></tr>').join('');
+  }
   await cargarCatastro();
   for (const [k,id] of [['aguas','c_aguas'],['cx_agua','c_cx_agua'],['cx_ruta','c_cx_ruta'],['parcelas','c_parcelas'],
-                        ['catastro','c_catastro'],['arba','c_arba'],['campos','c_campos']]){
+                        ['catastro','c_catastro'],['arba','c_arba'],['campos','c_campos'],['puertos','c_puertos']]){
     const cb = document.getElementById(id);
     const act = () => { if (!capas[k]) return; cb.checked ? capas[k].addTo(mapa) : mapa.removeLayer(capas[k]); };
     cb.onchange = act; act();
