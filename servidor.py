@@ -154,6 +154,27 @@ def borrar_parcela(pid):
         return antes - len(fc["features"])
 
 
+ASIGNACIONES = os.path.join(DIR_SALIDA, "asignaciones_campos.json")
+
+
+def asignar_campo(campo_id, partidas):
+    """Guarda qué parcelas ARBA forman un campo del plano y recalcula el resumen."""
+    import subprocess
+    import sys
+    with _LOCK:
+        asig = _cargar(ASIGNACIONES)
+        if not isinstance(asig, dict) or "features" in asig:
+            asig = {}
+        if partidas:
+            asig[campo_id] = partidas
+        else:
+            asig.pop(campo_id, None)
+        _guardar_fc(ASIGNACIONES, asig)
+        script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resumen_campos.py")
+        subprocess.run([sys.executable, script], timeout=120, check=False)
+    return len(asig)
+
+
 def buscar(q):
     q = q.lower()
     for ruta in sorted(glob.glob(os.path.join(DIR_SALIDA, "*.csv"))
@@ -283,9 +304,25 @@ class Manejador(SimpleHTTPRequestHandler):
             except Exception:  # noqa
                 ha = None
             cuartel = (str(cuerpo.get("cuartel") or "")).strip()[:10]
-            return self._json({"ok": True, "feature": guardar_parcela(prop, ha, cuartel, ring)})
+            feat = guardar_parcela(prop, ha, cuartel, ring)
+            tipo = (str(cuerpo.get("tipo") or "")).strip()[:40]
+            if tipo:
+                with _LOCK:
+                    fc = _cargar(PARCELAS)
+                    for f in fc["features"]:
+                        if f["properties"].get("id") == feat["properties"]["id"]:
+                            f["properties"]["tipo"] = tipo
+                    _guardar_fc(PARCELAS, fc)
+                feat["properties"]["tipo"] = tipo
+            return self._json({"ok": True, "feature": feat})
         if u.path == "/api/parcela/borrar":
             return self._json({"ok": True, "borrados": borrar_parcela(cuerpo.get("id"))})
+        if u.path == "/api/asignar":
+            cid = (str(cuerpo.get("campo_id") or "")).strip()[:20]
+            partidas = [str(p).strip()[:20] for p in (cuerpo.get("partidas") or []) if str(p).strip()]
+            if not cid:
+                return self._json({"ok": False, "error": "falta campo_id"}, 400)
+            return self._json({"ok": True, "asignados": asignar_campo(cid, partidas[:50])})
         self._json({"ok": False, "error": "ruta no encontrada"}, 404)
 
     def _json(self, obj, code=200):

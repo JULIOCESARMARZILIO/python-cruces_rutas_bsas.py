@@ -4,9 +4,10 @@ Distancia por camino entre puntos cualesquiera (campos, acopios, plantas, puerto
 Arma un grafo con todo lo que ya está calculado en DIR_SALIDA:
   caminos_*.geojson          caminos del partido (tierra + rutas), de caminos_partido.py
   caminos_usuario.geojson    caminos marcados a mano en marcar.html
+  caminos_catastro_*.geojson caminos rurales del catastro ARBA que no están en OSM
   red_rutas.json             rutas RN/RP de las 6 provincias, de procesar_osm.py
 Los nodos se unen por coordenada (redondeada a 6 decimales, igual en las tres fuentes
-porque salen del mismo OSM). Los extremos de los caminos marcados se enganchan al nodo
+porque salen del mismo OSM). Los extremos de los caminos marcados y del catastro se enganchan al nodo
 más cercano. Cada punto pedido se engancha al nodo más cercano de la red y se busca el
 camino más corto con A* (heurística = distancia en línea recta, admisible).
 
@@ -25,6 +26,7 @@ DIR_SALIDA = os.environ.get("DIR_SALIDA", "/data/salida")
 CELDA = 0.01            # grilla para buscar el nodo más cercano (~1 km)
 MAX_ENGANCHE_KM = 30.0  # si el punto queda más lejos de la red, no se rutea
 ENGANCHE_MARCADO_KM = 0.5
+ENGANCHE_CATASTRO_KM = 0.2  # los caminos del catastro son el hueco entre parcelas (~40 m)
 COSER_KM = 3.0         # puntas muertas de rutas a unir con otra componente
 NO_TRANSITABLE = {"footway", "path", "cycleway", "steps", "pedestrian", "bridleway",
                   "proposed", "construction", "corridor", "platform", "elevator", "raceway",
@@ -237,7 +239,7 @@ def _firma():
 
 def construir():
     red = Red()
-    marcados = []
+    sueltos = []   # (coords, tipo, nombre, km de enganche): no comparten nodos con el OSM
     for p in _archivos():
         base = os.path.basename(p)
         if base == "red_rutas.json":
@@ -252,7 +254,15 @@ def construir():
             if g.get("type") != "LineString":
                 continue
             if base == "caminos_usuario.geojson":
-                marcados.append((g["coordinates"], pr.get("nombre") or "Camino marcado"))
+                sueltos.append((g["coordinates"], "marcado", pr.get("nombre") or "Camino marcado",
+                                ENGANCHE_MARCADO_KM))
+                n += 1
+                continue
+            if "highway" not in pr:   # catastro ARBA (caminos_catastro.py): solo los que no están en OSM
+                if pr.get("en_osm") == "no":
+                    cu = f" (cuartel {pr['cuartel']})" if pr.get("cuartel") else ""
+                    sueltos.append((g["coordinates"], "tierra", "camino de catastro" + cu, ENGANCHE_CATASTRO_KM))
+                    n += 1
                 continue
             if pr.get("highway") in NO_TRANSITABLE:
                 continue
@@ -274,23 +284,22 @@ def construir():
         red.fuentes["red_rutas.json"] = n
     red.fuentes["empalmes_cosidos"] = red.coser()
     red.indexar()
-    # caminos marcados a mano: se agregan y sus extremos se enganchan a la red
-    for coords, nombre in marcados:
+    # caminos del catastro y marcados a mano: se agregan y sus extremos se enganchan a la red
+    for coords, tipo, nombre, max_km in sueltos:
         if len(coords) < 2:
             continue
         nuevos_antes = len(red.lonlat)
         extremos = []
         for c in (coords[0], coords[-1]):
-            extremos.append(red.cercano(c[0], c[1], ENGANCHE_MARCADO_KM)[0])
-        red.linea(coords, "marcado", nombre)
+            extremos.append(red.cercano(c[0], c[1], max_km)[0])
+        red.linea(coords, tipo, nombre)
         propios = set(range(nuevos_antes, len(red.lonlat)))
-        for j in propios:   # que el próximo camino marcado pueda engancharse a este
+        for j in propios:   # que el próximo camino suelto pueda engancharse a este
             lo, la = red.lonlat[j]
             red.grilla.setdefault((int(math.floor(lo / CELDA)), int(math.floor(la / CELDA))), []).append(j)
         for c, i in zip((coords[0], coords[-1]), extremos):
             if i is not None and i not in propios:
-                red.arista(red.idx[(round(c[0], 6), round(c[1], 6))], i, "marcado", nombre)
-    red.fuentes["caminos_usuario.geojson"] = len(marcados)
+                red.arista(red.idx[(round(c[0], 6), round(c[1], 6))], i, tipo, nombre)
     red.indexar()
     return red
 
@@ -377,7 +386,7 @@ def ruta(puntos):
         tot["horas"] += horas
         for k, v in tipos.items():
             por_tipo[k] = por_tipo.get(k, 0.0) + v
-    return {"ok": True, "fuente": "red propia (OSM + caminos marcados)",
+    return {"ok": True, "fuente": "red propia (OSM + catastro + caminos marcados)",
             "km_total": round(tot["km_total"], 2), "km_acceso": round(tot["km_acceso"], 3),
             "horas": round(tot["horas"], 2),
             "por_tipo": {k: round(v, 2) for k, v in por_tipo.items() if v > 0.005},
@@ -414,6 +423,7 @@ def lugares():
     """Lista unificada de puntos con nombre para elegir origen/destino."""
     fuentes = [
         ("campos.geojson", "campo"),
+        ("campos_25_de_mayo.geojson", "campo"),   # campos del plano ubicados (resumen_campos.py)
         ("parcelas.geojson", "parcela"),
         ("plantas_sisa.geojson", "planta"),
         ("silos_puertos.geojson", None),
