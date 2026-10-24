@@ -13,6 +13,13 @@ Salida: `cruces_<provincia>.csv/.geojson` y `silos_puertos.csv/.geojson`.
     pip install -r requirements.txt
     python procesar_osm.py  # descarga el mapa (~300 MB) a /data; o pasar la ruta al .pbf
 
+## Medir distancias (`distancia.html`)
+Página para el celular: se marcan dos o más puntos (tocando el mapa, buscando un campo,
+planta SISA, acopio, puerto o pueblo, o con "Mi ubicación") y da los km por camino, ida y
+vuelta, tiempo estimado de camión y cuántos km son de tierra. El cálculo lo hace `ruteo.py`
+en el servidor (`POST /api/ruta`) sobre los caminos del partido, los caminos marcados a mano
+y la red de rutas RN/RP; como comparación se muestra también la ruta de OSRM público.
+
 ## Railway
 `run.sh` usa el volumen `/data`, corre el procesador y sirve los resultados por HTTP en `$PORT`.
 Poner la variable `FORZAR=1` para recalcular.
