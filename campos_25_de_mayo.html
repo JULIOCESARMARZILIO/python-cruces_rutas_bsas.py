@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propietarios — 25 de Mayo</title>
+<style>
+  :root { color-scheme: light dark; --borde:#ddd; --suave:#666; --acento:#2b6b00; }
+  @media (prefers-color-scheme: dark){ :root { --borde:#333; --suave:#aaa; --acento:#7ed957; } }
+  body { font-family: system-ui, sans-serif; margin: 0 auto; padding: 16px; max-width: 900px; }
+  h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 24px 0 6px; }
+  .sub { color: var(--suave); font-size: 13px; }
+  .tiles { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:10px; margin:14px 0; }
+  .tile { border:1px solid var(--borde); border-radius:10px; padding:10px 12px; }
+  .tile b { display:block; font-size:22px; color:var(--acento); font-variant-numeric: tabular-nums; }
+  .tile span { font-size:12px; color:var(--suave); }
+  table { border-collapse: collapse; width:100%; font-size:14px; }
+  th, td { padding:4px 6px; border-bottom:1px solid var(--borde); text-align:left; }
+  td.n, th.n { text-align:right; font-variant-numeric: tabular-nums; }
+  .scroll { overflow-x:auto; }
+  input { font-size:15px; padding:6px 8px; width:100%; max-width:360px; box-sizing:border-box; }
+</style>
+</head>
+<body>
+<h1>Campos y propietarios — Partido de 25 de Mayo</h1>
+<div class="sub">Transcripto del plano catastral rural. <a href="mapa_25_de_mayo.html">Ver en el mapa</a> ·
+  <a href="campos_25_de_mayo.csv" download>campos (CSV)</a> · <a href="propietarios_25_de_mayo.csv" download>propietarios (CSV)</a></div>
+<div class="tiles" id="tiles"></div>
+<h2>Por cuartel</h2><div class="scroll"><table id="cuarteles"></table></div>
+<h2>Por tipo de titular</h2><div class="scroll"><table id="titular"></table></div>
+<h2>Por tipo de campo</h2><div class="scroll"><table id="tipo"></table></div>
+<h2>Ranking de propietarios</h2>
+<input id="filtro" placeholder="Buscar propietario…">
+<div class="scroll"><table id="ranking"></table></div>
+<script>
+const fmt = n => n==null ? '—' : (Math.round(n*10)/10).toLocaleString('es-AR');
+const esc = t => String(t==null?'':t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function grupo(id, datos, nombre){
+  let h = '<tr><th>'+nombre+'</th><th class="n">Campos</th><th class="n">Propietarios</th><th class="n">Ha</th><th class="n">Prom. ha/campo</th><th class="n">Mediana</th></tr>';
+  for (const [k,v] of Object.entries(datos))
+    h += '<tr><td>'+esc(k)+'</td><td class="n">'+v.campos+'</td><td class="n">'+v.propietarios+'</td><td class="n">'+fmt(v.ha_total)
+      +'</td><td class="n">'+fmt(v.promedio)+'</td><td class="n">'+fmt(v.mediana)+'</td></tr>';
+  document.getElementById(id).innerHTML = h;
+}
+fetch('campos_25_de_mayo_resumen.json').then(r => r.json()).then(s => {
+  const t = [[s.campos.toLocaleString('es-AR'),'campos'],[s.propietarios.toLocaleString('es-AR'),'propietarios'],
+    [fmt(s.ha_total),'ha con dato'],[fmt(s.por_campo.promedio)+' ha','promedio por campo'],
+    [fmt(s.por_propietario.promedio)+' ha','promedio por propietario'],[fmt(s.por_propietario.mediana)+' ha','mediana por propietario'],
+    [fmt(s.top10_pct_superficie)+' %','superficie de los 10 más grandes'],[s.campos_sin_ha,'campos sin ha en el plano']];
+  document.getElementById('tiles').innerHTML = t.map(x => '<div class="tile"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('');
+  grupo('cuarteles', s.por_cuartel, 'Cuartel'); grupo('titular', s.por_tipo_titular, 'Titular'); grupo('tipo', s.por_tipo, 'Tipo');
+  const filas = s.ranking.map((p,i) => '<tr data-k="'+esc(p.propietario.toLowerCase())+'"><td class="n">'+(i+1)+'</td><td>'+esc(p.propietario)
+    +'</td><td>'+esc(p.titular)+'</td><td class="n">'+p.campos+'</td><td class="n">'+fmt(p.ha)+'</td><td class="n">'+fmt(p.campos?p.ha/p.campos:null)+'</td></tr>');
+  const tb = document.getElementById('ranking');
+  tb.innerHTML = '<tr><th class="n">#</th><th>Propietario</th><th>Titular</th><th class="n">Campos</th><th class="n">Ha</th><th class="n">Ha/campo</th></tr>' + filas.join('');
+  document.getElementById('filtro').oninput = e => { const q = e.target.value.toLowerCase();
+    for (const tr of tb.querySelectorAll('tr[data-k]')) tr.style.display = tr.dataset.k.includes(q) ? '' : 'none'; };
+});
+</script>
+</body>
+</html>
