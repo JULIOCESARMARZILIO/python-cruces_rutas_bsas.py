@@ -4,6 +4,8 @@ Servidor HTTP mínimo (stdlib) para publicar DIR_SALIDA y buscar en los CSV:
   /<archivo>             descarga directa
   /buscar?q=texto        filas de todos los CSV que contienen el texto (HTML)
   /buscar?q=texto&f=csv  lo mismo en CSV
+  /api/lugares           campos, parcelas, plantas, acopios, puertos y pueblos (JSON)
+  /api/ruta  (POST)      {"puntos": [[lat, lon], ...]} -> distancia por camino (ruteo.py)
 """
 
 import csv
@@ -15,6 +17,8 @@ import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
+
+import ruteo
 
 DIR_SALIDA = os.environ.get("DIR_SALIDA", "/data/salida")
 PORT = int(os.environ.get("PORT", "8080"))
@@ -192,6 +196,10 @@ class Manejador(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path)
+        if u.path == "/api/lugares":
+            return self._json({"ok": True, "lugares": ruteo.lugares()})
+        if u.path == "/api/ruta/estado":
+            return self._json({"ok": True, **ruteo.estado()})
         if u.path != "/buscar":
             return super().do_GET()
         qs = parse_qs(u.query)
@@ -246,6 +254,17 @@ class Manejador(SimpleHTTPRequestHandler):
             cuerpo = json.loads(self.rfile.read(largo) or b"{}")
         except Exception:  # noqa
             cuerpo = {}
+        if u.path == "/api/ruta":
+            try:
+                puntos = [[float(p[0]), float(p[1])] for p in cuerpo["puntos"]]
+            except Exception:  # noqa
+                return self._json({"ok": False, "error": "puntos inválidos"}, 400)
+            if not 2 <= len(puntos) <= 20:
+                return self._json({"ok": False, "error": "hacen falta entre 2 y 20 puntos"}, 400)
+            try:
+                return self._json(ruteo.ruta(puntos))
+            except Exception as e:  # noqa
+                return self._json({"ok": False, "error": f"error calculando la ruta: {e}"}, 500)
         if u.path == "/api/campo":
             try:
                 lat = float(cuerpo["lat"]); lon = float(cuerpo["lon"])
@@ -325,4 +344,6 @@ class Manejador(SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"Sirviendo {DIR_SALIDA} en el puerto {PORT}", flush=True)
+    # armar la red de ruteo en segundo plano para que la primera consulta no espere
+    threading.Thread(target=ruteo.red_actual, daemon=True).start()
     ThreadingHTTPServer(("0.0.0.0", PORT), Manejador).serve_forever()

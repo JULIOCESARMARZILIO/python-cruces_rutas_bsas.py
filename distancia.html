@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Medir distancia por camino</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; color:#111; }
+  #mapa { position: absolute; inset: 0; }
+  #barra { position:absolute; top:10px; left:10px; right:60px; z-index:1000; max-width:420px; }
+  #buscar { width:100%; font-size:16px; padding:10px 12px; border-radius:10px; border:1px solid #bbb;
+    box-shadow:0 2px 10px rgba(0,0,0,.25); }
+  #sugerencias { background:#fff; border-radius:10px; margin-top:4px; max-height:45vh; overflow:auto;
+    box-shadow:0 2px 10px rgba(0,0,0,.25); display:none; }
+  #sugerencias div { padding:9px 12px; border-bottom:1px solid #eee; cursor:pointer; font-size:14px; }
+  #sugerencias div:hover { background:#f3f3f3; }
+  #sugerencias small { color:#666; }
+  .tag { display:inline-block; font-size:11px; padding:1px 6px; border-radius:8px; color:#fff; margin-right:6px; }
+  #hoja { position:absolute; left:10px; bottom:10px; z-index:1000; width:min(420px, calc(100% - 20px));
+    background:rgba(255,255,255,.97); border-radius:12px; box-shadow:0 2px 14px rgba(0,0,0,.3);
+    padding:12px 14px; max-height:55vh; overflow:auto; font-size:14px; }
+  #ayuda { color:#444; }
+  .total { font-size:30px; font-weight:700; color:#b02a00; line-height:1.1; }
+  .total small { font-size:14px; font-weight:400; color:#444; }
+  .fila { display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #eee; }
+  .fila span:last-child { font-variant-numeric: tabular-nums; font-weight:600; }
+  .botones { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  button { font-size:14px; padding:8px 10px; border-radius:8px; border:1px solid #bbb; background:#fff; cursor:pointer; }
+  button.prim { background:#b02a00; border-color:#b02a00; color:#fff; }
+  #puntos { margin:6px 0; padding:0; list-style:none; }
+  #puntos li { padding:4px 0; display:flex; gap:6px; align-items:center; border-bottom:1px dashed #ddd; }
+  #puntos li b { min-width:22px; height:22px; border-radius:11px; background:#b02a00; color:#fff;
+    display:inline-flex; align-items:center; justify-content:center; font-size:12px; }
+  #puntos li span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #puntos li button { padding:2px 8px; font-size:12px; }
+  details { margin-top:8px; } summary { cursor:pointer; color:#1664c0; }
+  .sub { color:#666; font-size:12px; }
+  .err { color:#a00; margin-top:6px; }
+  .pin { background:#b02a00; color:#fff; border:2px solid #fff; border-radius:50%; width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;
+    box-shadow:0 1px 5px rgba(0,0,0,.5); }
+  #capas { margin-top:8px; font-size:13px; }
+  #capas label { margin-right:8px; white-space:nowrap; }
+  #hoja.chica > *:not(#resultado):not(#min), #hoja.chica #resultado > *:not(.total) { display:none !important; }
+  #min { position:absolute; top:6px; right:8px; padding:2px 8px; }
+</style>
+</head>
+<body>
+<div id="mapa"></div>
+<div id="barra">
+  <input id="buscar" type="search" placeholder="Buscar campo, planta, acopio, puerto, pueblo…" autocomplete="off">
+  <div id="sugerencias"></div>
+</div>
+<div id="hoja">
+  <button id="min" title="Achicar">▾</button>
+  <div id="ayuda"><b>Medir distancia por camino</b><br>
+    Tocá el mapa para poner el punto de salida y después el de llegada (podés seguir agregando paradas),
+    o buscalos arriba. Los puntos se pueden arrastrar.</div>
+  <ul id="puntos"></ul>
+  <div id="resultado"></div>
+  <div class="botones">
+    <button id="miUbic">📍 Mi ubicación</button>
+    <button id="deshacer">↶ Deshacer</button>
+    <button id="invertir">⇄ Invertir</button>
+    <button id="limpiar">✕ Limpiar</button>
+    <button id="compartir">🔗 Compartir</button>
+  </div>
+  <div id="capas"></div>
+  <div class="sub" style="margin-top:6px"><a href="mapa_25_de_mayo.html">Caminos 25 de Mayo</a> ·
+    <a href="marcar.html">Marcar campos y caminos</a> · <a href="mapa.html">Mapa general</a></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const COLOR = { campo:'#2e7d32', parcela:'#7a4b00', planta:'#6b3fa0', acopio:'#e08a00',
+                puerto:'#1664c0', localidad:'#555' };
+const ETIQ = { campo:'Campos', parcela:'Parcelas', planta:'Plantas SISA', acopio:'Acopios',
+               puerto:'Puertos', localidad:'Pueblos' };
+const TIPO_VIA = { pavimento:'Rutas y caminos principales', tierra:'Caminos de tierra',
+                   calle:'Calles de pueblo', marcado:'Caminos marcados a mano',
+                   empalme:'Empalmes (dato faltante en el mapa)', acceso:'Del punto al camino (línea recta)' };
+
+const mapa = L.map('mapa', { zoomControl:false }).setView([-35.43,-60.17], 10);
+L.control.zoom({ position:'topright' }).addTo(mapa);
+const baseMapa = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(mapa);
+const baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom:19, attribution:'Imágenes © Esri' });
+L.control.layers({ 'Mapa':baseMapa, 'Satélite':baseSat }, {}, { position:'topright' }).addTo(mapa);
+const lienzo = L.canvas({ padding:.5 });
+
+let puntos = [];        // [{lat, lon, nombre, marker}]
+let lineas = L.layerGroup().addTo(mapa);
+let lugares = [];
+const capasLugar = {};
+const $ = id => document.getElementById(id);
+const fmt = (n, d=1) => Number(n).toLocaleString('es-AR', { minimumFractionDigits:d, maximumFractionDigits:d });
+const letra = i => String.fromCharCode(65 + i);
+function horas(h){ const hh = Math.floor(h), mm = Math.round((h-hh)*60); return (hh? hh+' h ':'')+mm+' min'; }
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ---------------------------------------------------------------- puntos
+function icono(i){ return L.divIcon({ className:'', html:'<div class="pin">'+letra(i)+'</div>', iconSize:[26,26], iconAnchor:[13,13] }); }
+function agregarPunto(lat, lon, nombre, sinRefrescar){
+  if (puntos.length >= 20) return;
+  const p = { lat, lon, nombre: nombre || '' };
+  p.marker = L.marker([lat, lon], { draggable:true, icon:icono(puntos.length) }).addTo(mapa);
+  p.marker.on('dragend', e => { const ll = e.target.getLatLng(); p.lat = ll.lat; p.lon = ll.lng; p.nombre = ''; refrescar(); });
+  puntos.push(p);
+  if (!sinRefrescar) refrescar();
+}
+function quitarPunto(i){ mapa.removeLayer(puntos[i].marker); puntos.splice(i,1); refrescar(); }
+function refrescar(){
+  puntos.forEach((p,i) => p.marker.setIcon(icono(i)));
+  const ul = $('puntos'); ul.innerHTML = '';
+  puntos.forEach((p,i) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<b>'+letra(i)+'</b><span>'+esc(p.nombre || (fmt(p.lat,5)+', '+fmt(p.lon,5)))+'</span>';
+    const x = document.createElement('button'); x.textContent = '✕'; x.onclick = () => quitarPunto(i);
+    li.appendChild(x); ul.appendChild(li);
+  });
+  $('ayuda').style.display = puntos.length ? 'none' : 'block';
+  history.replaceState(null, '', puntos.length ? '#p=' + puntos.map(p => p.lat.toFixed(5)+','+p.lon.toFixed(5)).join(';') : '#');
+  calcular();
+}
+
+mapa.on('click', e => agregarPunto(e.latlng.lat, e.latlng.lng));
+$('deshacer').onclick = () => { if (puntos.length) quitarPunto(puntos.length-1); };
+$('limpiar').onclick = () => { puntos.forEach(p => mapa.removeLayer(p.marker)); puntos = []; refrescar(); };
+$('invertir').onclick = () => { puntos.reverse(); refrescar(); };
+$('compartir').onclick = async () => {
+  const url = location.href;
+  try { if (navigator.share) await navigator.share({ title:'Distancia por camino', url });
+        else { await navigator.clipboard.writeText(url); alert('Link copiado'); } } catch(e) {}
+};
+$('miUbic').onclick = () => {
+  if (!navigator.geolocation) return alert('El navegador no da la ubicación');
+  navigator.geolocation.getCurrentPosition(
+    pos => { agregarPunto(pos.coords.latitude, pos.coords.longitude, 'Mi ubicación'); mapa.setView([pos.coords.latitude, pos.coords.longitude], 13); },
+    () => alert('No se pudo obtener la ubicación'), { enableHighAccuracy:true, timeout:15000 });
+};
+$('min').onclick = () => {
+  const chica = $('hoja').classList.toggle('chica');
+  $('min').textContent = chica ? '▴' : '▾';
+};
+
+// ---------------------------------------------------------------- cálculo
+let pedido = 0;
+async function osrm(pts){
+  // segunda opinión: OSRM público (red completa del OSM, perfil auto)
+  try{
+    const url = 'https://router.project-osrm.org/route/v1/driving/' +
+      pts.map(p => p.lon.toFixed(6)+','+p.lat.toFixed(6)).join(';') + '?overview=full&geometries=geojson';
+    const r = await fetch(url); if (!r.ok) return null;
+    const j = await r.json(); if (j.code !== 'Ok' || !j.routes.length) return null;
+    return { km: j.routes[0].distance/1000, horas: j.routes[0].duration/3600,
+             coords: j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]) };
+  }catch(e){ return null; }
+}
+async function calcular(){
+  lineas.clearLayers();
+  const res = $('resultado');
+  if (puntos.length < 2){ res.innerHTML = puntos.length ? '<div class="sub">Tocá el mapa para marcar la llegada.</div>' : ''; return; }
+  const n = ++pedido;
+  res.innerHTML = '<div class="sub">Calculando…</div>';
+  const pts = puntos.map(p => ({ lat:p.lat, lon:p.lon }));
+  let r = null;
+  try{
+    const resp = await fetch('api/ruta', { method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ puntos: pts.map(p => [p.lat, p.lon]) }) });
+    r = await resp.json();
+  }catch(e){ r = { ok:false, error:'no se pudo consultar el servidor' }; }
+  const o = await osrm(pts);
+  if (n !== pedido) return;   // llegó otro pedido mientras tanto
+  let html = '';
+  if (r && r.ok){
+    for (const p of r.piernas)
+      L.polyline(p.coords, { color:'#b02a00', weight:5, opacity:.85 }).addTo(lineas);
+    html += '<div class="total">'+fmt(r.km_total)+' <small>km por camino</small></div>';
+    html += '<div class="sub">Ida y vuelta: '+fmt(r.km_total*2)+' km · camión ≈ '+horas(r.horas)+' (solo ida)</div>';
+    if (r.piernas.length > 1)
+      r.piernas.forEach((p,i) => html += '<div class="fila"><span>'+letra(i)+' → '+letra(i+1)+'</span><span>'+fmt(p.km)+' km</span></div>');
+    const recta = r.piernas.reduce((a,p) => a + p.km_recta, 0);
+    html += '<div class="fila"><span>En línea recta</span><span>'+fmt(recta)+' km</span></div>';
+    for (const [k,v] of Object.entries(r.por_tipo).sort((a,b) => b[1]-a[1]))
+      html += '<div class="fila"><span>'+(TIPO_VIA[k]||k)+'</span><span>'+fmt(v)+' km</span></div>';
+    if (o) html += '<div class="fila"><span>Comparación OSRM (línea azul)</span><span>'+fmt(o.km)+' km</span></div>';
+    html += '<details><summary>Por dónde va</summary>';
+    r.piernas.forEach((p,i) => {
+      if (r.piernas.length > 1) html += '<div class="sub" style="margin-top:4px"><b>'+letra(i)+' → '+letra(i+1)+'</b></div>';
+      p.vias.forEach(v => html += '<div class="fila"><span>'+esc(v.via)+'</span><span>'+fmt(v.km)+' km</span></div>');
+    });
+    html += '</details>';
+    if (r.km_acceso > 1)
+      html += '<div class="sub" style="margin-top:6px">⚠ '+fmt(r.km_acceso)+' km son del punto al camino más cercano en línea recta: si hay un camino interno que falta, marcalo en <a href="marcar.html">Marcar caminos</a>.</div>';
+  } else if (o){
+    html += '<div class="total">'+fmt(o.km)+' <small>km por camino (OSRM)</small></div>';
+    html += '<div class="sub">Ida y vuelta: '+fmt(o.km*2)+' km. La red propia no pudo: '+esc(r && r.error || '')+'</div>';
+  } else {
+    html += '<div class="err">No se pudo calcular: '+esc(r && r.error || 'sin respuesta')+'</div>';
+  }
+  if (o) L.polyline(o.coords, { color:'#1664c0', weight:3, opacity:.7, dashArray:'6 6' }).addTo(lineas);
+  res.innerHTML = html;
+}
+
+// ---------------------------------------------------------------- lugares
+async function cargarLugares(){
+  try{ const r = await fetch('api/lugares'); const j = await r.json(); lugares = j.lugares || []; }catch(e){ lugares = []; }
+  const porTipo = {};
+  for (const l of lugares) (porTipo[l.tipo] = porTipo[l.tipo] || []).push(l);
+  const cont = $('capas'); cont.innerHTML = '<span class="sub">Mostrar: </span>';
+  for (const tipo of Object.keys(ETIQ)){
+    const ls = porTipo[tipo]; if (!ls) continue;
+    const g = L.layerGroup(ls.map(l => {
+      const m = L.circleMarker([l.lat, l.lon], { renderer:lienzo, radius: tipo==='campo'?7:5, weight:1.5,
+        color:'#fff', fillColor:COLOR[tipo], fillOpacity:1 });
+      const div = document.createElement('div');
+      div.innerHTML = '<b>'+esc(l.nombre)+'</b><br><span class="sub">'+esc(ETIQ[tipo])+(l.extra?' · '+esc(l.extra):'')+'</span><br>';
+      const b = document.createElement('button'); b.className = 'prim'; b.style.marginTop = '6px';
+      b.textContent = 'Usar como punto';
+      b.onclick = () => { mapa.closePopup(); agregarPunto(l.lat, l.lon, l.nombre); };
+      div.appendChild(b); m.bindPopup(div);
+      return m;
+    }));
+    capasLugar[tipo] = g;
+    const visible = ['campo','parcela','planta','puerto','localidad'].includes(tipo);
+    if (visible) g.addTo(mapa);
+    const lab = document.createElement('label');
+    lab.innerHTML = '<input type="checkbox"'+(visible?' checked':'')+'> <span class="tag" style="background:'+COLOR[tipo]+'">'+ls.length+'</span>'+ETIQ[tipo];
+    lab.querySelector('input').onchange = e => e.target.checked ? g.addTo(mapa) : mapa.removeLayer(g);
+    cont.appendChild(lab);
+  }
+}
+const sinTildes = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+$('buscar').oninput = () => {
+  const q = sinTildes($('buscar').value.trim()), box = $('sugerencias');
+  if (q.length < 2){ box.style.display = 'none'; return; }
+  const palabras = q.split(/\s+/);
+  const encontrados = lugares.filter(l => { const t = sinTildes(l.nombre+' '+l.extra+' '+l.tipo); return palabras.every(p => t.includes(p)); })
+                             .sort((a,b) => (a.tipo==='campo'?0:1)-(b.tipo==='campo'?0:1)).slice(0, 40);
+  box.innerHTML = '';
+  for (const l of encontrados){
+    const d = document.createElement('div');
+    d.innerHTML = '<span class="tag" style="background:'+COLOR[l.tipo]+'">'+esc(l.tipo)+'</span>'+esc(l.nombre)+(l.extra?' <small>'+esc(l.extra)+'</small>':'');
+    d.onclick = () => { agregarPunto(l.lat, l.lon, l.nombre); $('buscar').value = ''; box.style.display = 'none';
+                        if (puntos.length === 1) mapa.setView([l.lat, l.lon], 12); };
+    box.appendChild(d);
+  }
+  if (!encontrados.length) box.innerHTML = '<div class="sub">Sin resultados</div>';
+  box.style.display = 'block';
+};
+$('buscar').onkeydown = e => { if (e.key === 'Escape'){ $('sugerencias').style.display = 'none'; } };
+
+// arranque: límite del partido como referencia y puntos del link (#p=lat,lon;lat,lon)
+(async () => {
+  try{ const r = await fetch('caminos_25_de_mayo_limite.geojson');
+       if (r.ok) L.geoJSON(await r.json(), { interactive:false, style:{ color:'#6b3fa0', weight:2, dashArray:'6 5', fill:false } }).addTo(mapa); }catch(e){}
+  await cargarLugares();
+  const m = location.hash.match(/p=([-\d.,;]+)/);
+  if (m){
+    const ps = m[1].split(';').map(s => s.split(',').map(Number)).filter(a => a.length === 2 && !a.some(isNaN));
+    for (const [lat, lon] of ps){
+      const l = lugares.find(x => Math.abs(x.lat-lat) < 1e-4 && Math.abs(x.lon-lon) < 1e-4);
+      agregarPunto(lat, lon, l ? l.nombre : '', true);
+    }
+    if (puntos.length) mapa.fitBounds(L.latLngBounds(puntos.map(p => [p.lat, p.lon])), { padding:[60,60] });
+    refrescar();
+  }
+})();
+</script>
+</body>
+</html>
