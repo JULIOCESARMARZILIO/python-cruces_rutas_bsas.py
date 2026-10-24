@@ -413,7 +413,7 @@ def _centroide(g):
 
 
 def _nombre(pr):
-    for k in ("nombre", "name", "titular", "propietario", "razon_social"):
+    for k in ("nombre", "name", "terminal", "titular", "propietario", "razon_social"):
         if pr.get(k):
             return str(pr[k])
     return ""
