@@ -30,9 +30,10 @@ fi
 for H in mapa.html mapa_25_de_mayo.html marcar.html campos_25_de_mayo.html distancia.html; do
   cp "$(dirname "$0")/$H" "$DIR_SALIDA/" 2>/dev/null || cp "/app/$H" "$DIR_SALIDA/" 2>/dev/null || true
 done
-# catastro ARBA de 25 de Mayo (generado con caminos_catastro.py, viene en datos/)
-for G in caminos_catastro_25_de_mayo.geojson parcelas_arba_25_de_mayo.geojson limite_arba_25_de_mayo.geojson; do
-  cp "$(dirname "$0")/datos/$G" "$DIR_SALIDA/" 2>/dev/null || cp "/app/datos/$G" "$DIR_SALIDA/" 2>/dev/null || true
+# catastro ARBA de 25 de Mayo y partidos vecinos (generado con caminos_catastro.py, viene en datos/)
+D="$(dirname "$0")/datos"; [ -d "$D" ] || D=/app/datos
+for G in "$D"/caminos_catastro_*.geojson "$D"/parcelas_arba_*.geojson "$D"/limite_arba_*.geojson; do
+  if [ -f "$G" ]; then cp "$G" "$DIR_SALIDA/"; fi
 done
 # archivo de campos cargados por el usuario (no pisar si ya existe)
 [ -f "$DIR_SALIDA/campos.geojson" ] || echo '{"type":"FeatureCollection","features":[]}' > "$DIR_SALIDA/campos.geojson"
