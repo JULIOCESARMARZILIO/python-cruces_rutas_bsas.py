@@ -42,6 +42,13 @@ PARCELAS = os.path.join(DIR_SALIDA, "parcelas.geojson")
 SLUG = "25_de_mayo"
 TOLERANCIA = 0.02
 
+
+def es_pueblo(nomenclatura):
+    """Parcela con sección (7º carácter distinto de 0): planta urbana, quintas o chacras de
+    un pueblo o de la ciudad. El plano rural no trae sus dueños, así que quedan afuera."""
+    return len(nomenclatura or "") > 6 and nomenclatura[6] != "0"
+
+
 RE_SOCIEDAD = re.compile(r"\b(s\.?\s?a\.?|s\.?r\.?l\.?|s\.?c\.?a\.?|s\.?a\.?s\.?|s\.?c\.?|"
                          r"sacaif|saic\w*|saca\w*|sacif\w*|cia|hnos|sociedad|y cia)\b|\bs\.a\.", re.I)
 RE_INSTITUCION = re.compile(r"universidad|escuela|municipalidad|provincia|estado|iglesia|"
@@ -134,7 +141,7 @@ def main():
     campos = leer_tabla()
     arba_fc = leer_json(ARBA, {"features": []})
     arba = {f["properties"]["partida"]: dict(f["properties"], geometry=f["geometry"])
-            for f in arba_fc["features"]}
+            for f in arba_fc["features"] if not es_pueblo(f["properties"].get("nomenclatura"))}
     ubicar(campos, arba)
 
     # parcelas dibujadas a mano en el mapa que no son del plano
