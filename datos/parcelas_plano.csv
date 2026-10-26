@@ -409,7 +409,7 @@ id,zona,cuartel,propietario,tipo,hectareas,confianza,nota,lat,lon,partidas
 408,Cuartel IV (Riestra / Pedernales),IV,Elverdin,,354,alta,,,,
 409,Cuartel IV (Riestra / Pedernales),IV,Juan A. Elverdin,,283,media,"ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109024095
 410,Cuartel IV (Riestra / Pedernales),IV,La Yerba y Asoc.,,795,alta,,,,
-411,Cuartel IV (Riestra / Pedernales),IV,Herben S.A.C.I.,,154,media,,,,
+411,Cuartel IV (Riestra / Pedernales),IV,Herben S.A.C.I.,,154,media,corregido (el match automatico por superficie caia lejos); foto del plano de Riestra: el rotulo cae en estas dos parcelas (82+73 ha),,,109016887 109018271
 412,Cuartel IV (Riestra / Pedernales),IV,Adelto S.A.,,123,media,,,,
 413,Cuartel IV (Riestra / Pedernales),IV,Colamarino,,140,media,,,,
 414,Cuartel IV (Riestra / Pedernales),IV,Credil S.R.L.,,850,alta,ha leidas en foto IMG_9528,,,
@@ -420,7 +420,7 @@ id,zona,cuartel,propietario,tipo,hectareas,confianza,nota,lat,lon,partidas
 419,Cuartel IV (Riestra / Pedernales),IV,Enrique Jorge Keen,,373,alta,,,,
 420,Cuartel IV (Riestra / Pedernales),IV,O.N. de Mangieri,,141,media,,,,
 421,Cuartel IV (Riestra / Pedernales),IV,Omar Mangieri,,165,media,,,,
-422,Cuartel IV (Riestra / Pedernales),IV,Ricardo Manzor,,116,media,,,,
+422,Cuartel IV (Riestra / Pedernales),IV,Ricardo Manzor,,116,media,"corregido (el match automatico por superficie caia lejos); foto IMG_9529: el rotulo cae en esta parcela (166,8 ha; el campo seria parte)",,,109006845
 423,Cuartel IV (Riestra / Pedernales),IV,S. Perez Keen,,138,media,,,,
 424,Cuartel IV (Riestra / Pedernales),IV,Hugo A. Germano,,90,media,,,,
 425,Cuartel IV (Riestra / Pedernales),IV,Gertrudis Schumacher,,211,media,,,,
@@ -901,7 +901,7 @@ id,zona,cuartel,propietario,tipo,hectareas,confianza,nota,lat,lon,partidas
 900,Cuartel IV (Riestra / Pedernales),IV,R.O. Zeoliti,,,baja,foto IMG_9530; ubicado comparando la forma de las parcelas ARBA con la foto IMG_9530,-35.23406,-59.69181,109000052
 901,Cuartel IV (Riestra / Pedernales),IV,Flamini,,73,media,foto IMG_9530,,,
 902,Cuartel IV (Riestra / Pedernales),IV,Germano,,65,alta,foto IMG_9530,,,
-903,Cuartel IV (Riestra / Pedernales),IV,Fior Polverini,,192,media,foto IMG_9530,,,
+903,Cuartel IV (Riestra / Pedernales),IV,Fior Polverini,,192,media,foto IMG_9530; corregido (el match automatico por superficie caia lejos); foto IMG_9530: dos parcelas de 96 ha que suman 192,,,109016276 109000877
 904,Cuartel IV (Riestra / Pedernales),IV,Flamini Ferrari,,,baja,foto IMG_9530; ubicado comparando la forma de las parcelas ARBA con la foto IMG_9530,-35.22844,-59.66518,109016264 109016265
 905,Cuartel IV (Riestra / Pedernales),IV,Zeoliti,,60,alta,foto IMG_9530,,,
 906,Cuartel IV (Riestra / Pedernales),IV,Albanesi,,,baja,foto IMG_9530; ubicado comparando la forma de las parcelas ARBA con la foto IMG_9530,-35.23845,-59.69239,109016268
