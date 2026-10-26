@@ -1,11 +1,11 @@
 {
 "total": {
-"partidos": 80,
-"km_caminos": 88347.2,
+"partidos": 104,
+"km_caminos": 107142.6,
 "km_por_categoria": {
-"principal": 20531.5,
-"secundario": 41374.8,
-"vecinal": 26440.7
+"principal": 24675.4,
+"secundario": 50838.5,
+"vecinal": 31628.2
 }
 },
 "partidos": [
@@ -298,6 +298,24 @@
 ]
 },
 {
+"slug": "capitan_sarmiento",
+"nombre": "Capitán Sarmiento",
+"codigo": "121",
+"km": 380.5,
+"km_por_categoria": {
+"principal": 85.7,
+"secundario": 105.6,
+"vecinal": 189.1
+},
+"tramos": 383,
+"bbox": [
+-60.0101,
+-34.2772,
+-59.678,
+-34.014
+]
+},
+{
 "slug": "carlos_casares",
 "nombre": "Carlos Casares",
 "codigo": "016",
@@ -478,6 +496,24 @@
 ]
 },
 {
+"slug": "coronel_rosales",
+"nombre": "Coronel Rosales",
+"codigo": "113",
+"km": 382.2,
+"km_por_categoria": {
+"principal": 126.8,
+"secundario": 148.0,
+"vecinal": 107.3
+},
+"tramos": 273,
+"bbox": [
+-62.1552,
+-38.999,
+-61.471,
+-38.6284
+]
+},
+{
 "slug": "coronel_suarez",
 "nombre": "Coronel Suárez",
 "codigo": "024",
@@ -547,6 +583,24 @@
 -34.4596,
 -58.9929,
 -34.1668
+]
+},
+{
+"slug": "florentino_ameghino",
+"nombre": "Florentino Ameghino",
+"codigo": "128",
+"km": 501.8,
+"km_por_categoria": {
+"principal": 178.5,
+"secundario": 265.0,
+"vecinal": 58.3
+},
+"tramos": 249,
+"bbox": [
+-62.6212,
+-35.1345,
+-62.1253,
+-34.6139
 ]
 },
 {
@@ -802,6 +856,114 @@
 ]
 },
 {
+"slug": "hipolito_yrigoyen",
+"nombre": "Hipólito Yrigoyen",
+"codigo": "119",
+"km": 523.6,
+"km_por_categoria": {
+"principal": 102.8,
+"secundario": 221.8,
+"vecinal": 199.0
+},
+"tramos": 291,
+"bbox": [
+-62.0013,
+-36.5203,
+-61.2939,
+-36.0347
+]
+},
+{
+"slug": "islas_baradero",
+"nombre": "Islas Baradero",
+"codigo": "309",
+"km": 49.3,
+"km_por_categoria": {
+"principal": 28.8,
+"secundario": 17.4,
+"vecinal": 3.1
+},
+"tramos": 62,
+"bbox": [
+-59.5505,
+-33.8287,
+-59.2683,
+-33.671
+]
+},
+{
+"slug": "islas_campana",
+"nombre": "Islas Campana",
+"codigo": "314",
+"km": 105.7,
+"km_por_categoria": {
+"principal": 71.2,
+"secundario": 31.6,
+"vecinal": 3.0
+},
+"tramos": 82,
+"bbox": [
+-58.982,
+-34.0716,
+-58.6872,
+-33.9567
+]
+},
+{
+"slug": "islas_de_zarate",
+"nombre": "Islas de Zárate",
+"codigo": "338",
+"km": 107.0,
+"km_por_categoria": {
+"principal": 72.6,
+"secundario": 32.6,
+"vecinal": 1.8
+},
+"tramos": 106,
+"bbox": [
+-59.2953,
+-34.0619,
+-58.856,
+-33.8172
+]
+},
+{
+"slug": "islas_san_fernando",
+"nombre": "Islas San Fernando",
+"codigo": "396",
+"km": 55.2,
+"km_por_categoria": {
+"principal": 35.1,
+"secundario": 17.5,
+"vecinal": 2.6
+},
+"tramos": 51,
+"bbox": [
+-58.7166,
+-34.0537,
+-58.374,
+-34.0085
+]
+},
+{
+"slug": "islas_san_pedro",
+"nombre": "Islas San Pedro",
+"codigo": "399",
+"km": 13.8,
+"km_por_categoria": {
+"principal": 8.2,
+"secundario": 4.5,
+"vecinal": 1.1
+},
+"tramos": 25,
+"bbox": [
+-59.7821,
+-33.7377,
+-59.512,
+-33.6115
+]
+},
+{
 "slug": "junin",
 "nombre": "Junín",
 "codigo": "054",
@@ -889,6 +1051,24 @@
 -34.6535,
 -61.2867,
 -34.3136
+]
+},
+{
+"slug": "lezama",
+"nombre": "Lezama",
+"codigo": "137",
+"km": 162.9,
+"km_por_categoria": {
+"principal": 40.5,
+"secundario": 84.2,
+"vecinal": 38.2
+},
+"tramos": 119,
+"bbox": [
+-58.1331,
+-36.0064,
+-57.879,
+-35.7406
 ]
 },
 {
@@ -1051,6 +1231,24 @@
 -35.7403,
 -58.4915,
 -35.2596
+]
+},
+{
+"slug": "monte_hermoso",
+"nombre": "Monte Hermoso",
+"codigo": "126",
+"km": 29.1,
+"km_por_categoria": {
+"principal": 26.4,
+"secundario": 2.7,
+"vecinal": 0.0
+},
+"tramos": 43,
+"bbox": [
+-61.4551,
+-38.9852,
+-61.1168,
+-38.9307
 ]
 },
 {
@@ -1378,6 +1576,24 @@
 ]
 },
 {
+"slug": "salliquelo",
+"nombre": "Salliqueló",
+"codigo": "122",
+"km": 387.7,
+"km_por_categoria": {
+"principal": 26.0,
+"secundario": 221.7,
+"vecinal": 140.0
+},
+"tramos": 262,
+"bbox": [
+-63.2703,
+-36.8506,
+-62.8607,
+-36.4994
+]
+},
+{
 "slug": "salto",
 "nombre": "Salto",
 "codigo": "067",
@@ -1429,6 +1645,222 @@
 -34.4035,
 -59.2674,
 -34.0049
+]
+},
+{
+"slug": "san_cayetano",
+"nombre": "San Cayetano",
+"codigo": "116",
+"km": 1139.7,
+"km_por_categoria": {
+"principal": 130.8,
+"secundario": 718.9,
+"vecinal": 290.0
+},
+"tramos": 610,
+"bbox": [
+-59.9541,
+-38.7446,
+-59.2938,
+-38.0296
+]
+},
+{
+"slug": "san_nicolas",
+"nombre": "San Nicolás",
+"codigo": "098",
+"km": 443.8,
+"km_por_categoria": {
+"principal": 53.5,
+"secundario": 192.6,
+"vecinal": 197.6
+},
+"tramos": 442,
+"bbox": [
+-60.4571,
+-33.6657,
+-60.1693,
+-33.2716
+]
+},
+{
+"slug": "san_pedro",
+"nombre": "San Pedro",
+"codigo": "099",
+"km": 920.4,
+"km_por_categoria": {
+"principal": 180.5,
+"secundario": 274.7,
+"vecinal": 465.1
+},
+"tramos": 1000,
+"bbox": [
+-60.0673,
+-33.9995,
+-59.5733,
+-33.6092
+]
+},
+{
+"slug": "san_vicente",
+"nombre": "San Vicente",
+"codigo": "100",
+"km": 216.7,
+"km_por_categoria": {
+"principal": 49.1,
+"secundario": 73.5,
+"vecinal": 94.1
+},
+"tramos": 176,
+"bbox": [
+-58.5775,
+-35.23,
+-58.2567,
+-35.0177
+]
+},
+{
+"slug": "suipacha",
+"nombre": "Suipacha",
+"codigo": "102",
+"km": 419.2,
+"km_por_categoria": {
+"principal": 94.8,
+"secundario": 183.1,
+"vecinal": 141.4
+},
+"tramos": 289,
+"bbox": [
+-59.9203,
+-34.9526,
+-59.4964,
+-34.5451
+]
+},
+{
+"slug": "tandil",
+"nombre": "Tandil",
+"codigo": "103",
+"km": 2068.4,
+"km_por_categoria": {
+"principal": 698.0,
+"secundario": 1067.8,
+"vecinal": 302.5
+},
+"tramos": 1329,
+"bbox": [
+-59.7557,
+-37.7877,
+-58.6246,
+-36.875
+]
+},
+{
+"slug": "tapalque",
+"nombre": "Tapalqué",
+"codigo": "104",
+"km": 966.5,
+"km_por_categoria": {
+"principal": 315.3,
+"secundario": 447.7,
+"vecinal": 203.5
+},
+"tramos": 446,
+"bbox": [
+-60.9078,
+-36.7053,
+-59.3879,
+-36.0296
+]
+},
+{
+"slug": "tornquist",
+"nombre": "Tornquist",
+"codigo": "106",
+"km": 1341.7,
+"km_por_categoria": {
+"principal": 342.8,
+"secundario": 685.4,
+"vecinal": 313.4
+},
+"tramos": 656,
+"bbox": [
+-62.8869,
+-38.5532,
+-61.7143,
+-37.9575
+]
+},
+{
+"slug": "trenque_lauquen",
+"nombre": "Trenque Lauquen",
+"codigo": "107",
+"km": 2201.3,
+"km_por_categoria": {
+"principal": 347.4,
+"secundario": 1102.0,
+"vecinal": 751.9
+},
+"tramos": 1488,
+"bbox": [
+-63.1646,
+-36.5575,
+-62.0929,
+-35.5698
+]
+},
+{
+"slug": "tres_arroyos",
+"nombre": "Tres Arroyos",
+"codigo": "108",
+"km": 2261.3,
+"km_por_categoria": {
+"principal": 351.2,
+"secundario": 1292.4,
+"vecinal": 617.8
+},
+"tramos": 1328,
+"bbox": [
+-60.7393,
+-38.8853,
+-59.6434,
+-38.0252
+]
+},
+{
+"slug": "tres_lomas",
+"nombre": "Tres Lomas",
+"codigo": "127",
+"km": 534.3,
+"km_por_categoria": {
+"principal": 52.9,
+"secundario": 379.2,
+"vecinal": 102.2
+},
+"tramos": 292,
+"bbox": [
+-63.0855,
+-36.7032,
+-62.614,
+-36.2645
+]
+},
+{
+"slug": "villarino",
+"nombre": "Villarino",
+"codigo": "111",
+"km": 3583.3,
+"km_por_categoria": {
+"principal": 725.0,
+"secundario": 1893.8,
+"vecinal": 964.5
+},
+"tramos": 1932,
+"bbox": [
+-63.3841,
+-39.7614,
+-61.8884,
+-38.4885
 ]
 },
 {
