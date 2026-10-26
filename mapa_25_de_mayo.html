@@ -56,6 +56,10 @@
     <label><input type="checkbox" id="c_cx_agua" checked> Cruces camino × arroyo <span id="n_cx_agua"></span></label><br>
     <label><input type="checkbox" id="c_cx_ruta"> Empalmes camino × ruta <span id="n_cx_ruta"></span></label><br>
     <label><input type="checkbox" id="c_catastro" checked> Caminos del catastro ARBA <span id="n_cat"></span></label><br>
+    <span style="margin-left:22px">Color: <label><input type="radio" name="modo" value="cat" checked> categoría</label>
+      <label><input type="radio" name="modo" value="osm"> falta en OSM</label></span><br>
+    <label><input type="checkbox" id="c_vecinos" checked> Caminos de los demás partidos <span id="n_vec"></span></label><br>
+    <span class="sub" id="aviso_vec" style="margin-left:22px"></span><br>
     <label><input type="checkbox" id="c_arba"> Parcelas ARBA (tocá una para asignarla) <span id="n_arba"></span></label><br>
     <label><input type="checkbox" id="c_campos" checked> Campos ubicados <span id="n_campos"></span></label><br>
     <label><input type="checkbox" id="c_parcelas" checked> Parcelas dibujadas <span id="n_parc"></span></label><br>
@@ -64,8 +68,15 @@
   </div>
   <div class="leyenda">
     <div><span class="ln" style="border-color:#b02a00"></span>Caminos rurales (tierra, OSM)</div>
-    <div><span class="ln" style="border-color:#ff1493;border-top-width:4px"></span>Camino del catastro que falta en OSM</div>
-    <div><span class="ln" style="border-color:#5a3a1a"></span>Camino del catastro (ya en OSM)</div>
+    <div id="ley_cat">
+      <div><span class="ln" style="border-color:#7a0019;border-top-width:4px"></span>Camino principal (franja de 30 m o más, o terciaria)</div>
+      <div><span class="ln" style="border-color:#d2691e"></span>Camino secundario (franja ~20 m)</div>
+      <div><span class="ln" style="border-color:#c9a66b;border-top-style:dashed"></span>Camino vecinal / huella (~10 m)</div>
+    </div>
+    <div id="ley_osm" style="display:none">
+      <div><span class="ln" style="border-color:#ff1493;border-top-width:4px"></span>Camino del catastro que falta en OSM</div>
+      <div><span class="ln" style="border-color:#5a3a1a"></span>Camino del catastro (ya en OSM)</div>
+    </div>
     <div><span class="ln" style="border-color:#2b6b00;border-top-width:6px"></span>Campo ubicado</div>
     <div><span class="ln" style="border-color:#1664c0"></span>Rutas y pavimento</div>
     <div><span class="ln" style="border-color:#0a8fd0"></span>Ríos y arroyos</div>
@@ -141,7 +152,7 @@ async function cargarCapas(){
   }
   await cargarCatastro();
   for (const [k,id] of [['aguas','c_aguas'],['cx_agua','c_cx_agua'],['cx_ruta','c_cx_ruta'],['parcelas','c_parcelas'],
-                        ['catastro','c_catastro'],['arba','c_arba'],['campos','c_campos'],['puertos','c_puertos']]){
+                        ['catastro','c_catastro'],['vecinos','c_vecinos'],['arba','c_arba'],['campos','c_campos'],['puertos','c_puertos']]){
     const cb = document.getElementById(id);
     const act = () => { if (!capas[k]) return; cb.checked ? capas[k].addTo(mapa) : mapa.removeLayer(capas[k]); };
     cb.onchange = act; act();
@@ -149,22 +160,79 @@ async function cargarCapas(){
 }
 // ---- catastro ARBA: caminos (huecos entre parcelas), parcelas y campos del plano ----
 let LISTA = [];
+let MODO = 'cat';
+let INDICE = [];
+const CARGADOS = {}, GRUPO_PROV = L.layerGroup(), ZOOM_PROV = 9;
+function cargarVisibles(){
+  const aviso = document.getElementById('aviso_vec');
+  if (!document.getElementById('c_vecinos').checked){ aviso.textContent=''; return; }
+  if (mapa.getZoom() < ZOOM_PROV){ aviso.textContent = 'Acercate para ver los caminos de cada partido'; return; }
+  const b = mapa.getBounds().pad(0.2); let pend = 0;
+  for (const p of INDICE){
+    if (CARGADOS[p.slug]) continue;
+    if (!b.intersects(L.latLngBounds([p.bbox[1],p.bbox[0]],[p.bbox[3],p.bbox[2]]))) continue;
+    CARGADOS[p.slug] = 'cargando'; pend++;
+    geo('caminos_catastro_'+p.slug+'.geojson').then(gj => {
+      if (gj){ CARGADOS[p.slug] = L.geoJSON(gj, { style: estiloCamino, onEachFeature: popupCamino }).addTo(GRUPO_PROV); }
+      else delete CARGADOS[p.slug];
+      if (--pend === 0) aviso.textContent = '';
+    });
+  }
+  aviso.textContent = pend ? 'Cargando '+pend+' partido(s)…' : '';
+}
+const CAT = { principal:{ color:'#7a0019', weight:3.2, opacity:.95 },
+              secundario:{ color:'#d2691e', weight:1.8, opacity:.9 },
+              vecinal:{ color:'#c9a66b', weight:1.2, opacity:.9, dashArray:'4 3' } };
+function estiloCamino(f){
+  const p = f.properties;
+  if (MODO==='osm') return p.en_osm==='no' ? { color:'#ff1493', weight:3, opacity:.95, dashArray:null }
+    : p.en_osm==='si' ? { color:'#5a3a1a', weight:1.6, opacity:.8, dashArray:null }
+    : { color:'#999', weight:1.2, opacity:.7, dashArray:null };
+  const c = CAT[p.categoria] || CAT.secundario;
+  return Object.assign({ dashArray:null }, c);
+}
+function popupCamino(f, l){
+  const p = f.properties;
+  l.bindPopup('<b>Camino '+(p.categoria||'rural')+'</b> (catastro ARBA)<br>'+(p.partido?esc(p.partido)+' · ':'')
+    +fmt(p.km)+' km · franja de ~'+p.ancho_m+' m'+(p.cuartel?'<br>Cuartel '+esc(p.cuartel):'')
+    +'<br>'+(p.en_osm==='no'?'<b style="color:#c00">No figura en OpenStreetMap</b>'
+            :p.en_osm==='si'?'Figura en OpenStreetMap':'<small>Sin comparar con OpenStreetMap</small>'));
+}
 const esc = t => String(t==null?'':t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function cargarCatastro(){
   const cat = await geo('caminos_catastro_25_de_mayo.geojson');
   if (cat){
-    capas.catastro = L.geoJSON(cat, {
-      style: f => f.properties.en_osm==='no'
-        ? { color:'#ff1493', weight:3, opacity:.95 }
-        : { color:'#5a3a1a', weight:1.6, opacity:.8 },
-      onEachFeature:(f,l)=>{ const p=f.properties;
-        l.bindPopup('<b>Camino rural</b> (catastro ARBA)<br>'+fmt(p.km)+' km · ancho ~'+p.ancho_m+' m'
-          +'<br>Cuartel '+esc(p.cuartel)+'<br>'+(p.en_osm==='no'?'<b style="color:#c00">No figura en OpenStreetMap</b>':'Figura en OpenStreetMap')); } });
+    capas.catastro = L.geoJSON(cat, { style: estiloCamino, onEachFeature: popupCamino });
     document.getElementById('n_cat').textContent = '('+cat.features.length+')';
-    if (cat.resumen) document.getElementById('totalCat').innerHTML =
-      'Catastro ARBA: <b>'+fmt(cat.resumen.km_caminos)+' km</b> de caminos, <b style="color:#c00">'
-      +fmt(cat.resumen.km_que_faltan_en_osm)+' km</b> no están en OSM';
+    if (cat.resumen){ const r=cat.resumen, k=r.km_por_categoria||{};
+      document.getElementById('totalCat').innerHTML =
+        'Catastro ARBA: <b>'+fmt(r.km_caminos)+' km</b> de caminos, <b style="color:#c00">'
+        +fmt(r.km_que_faltan_en_osm)+' km</b> no están en OSM'
+        +(r.km_por_categoria ? '<br>Principales '+fmt(k.principal)+' km · secundarios '+fmt(k.secundario)
+          +' km · vecinales '+fmt(k.vecinal)+' km' : ''); }
   }
+  // demás partidos: el índice dice qué hay; cada partido se baja recién cuando entra en pantalla
+  const ind = await geo('indice_catastro.json');
+  if (ind){
+    INDICE = ind.partidos.filter(p => p.slug !== '25_de_mayo');
+    const km = INDICE.reduce((a,p) => a + (p.km||0), 0);
+    document.getElementById('n_vec').textContent = '('+INDICE.length+' partidos, '+fmt(km)+' km)';
+    const lim = await geo('limites_partidos.geojson');
+    if (lim) L.geoJSON(lim, { style:{ color:'#6b3fa0', weight:1.2, dashArray:'4 4', fill:false },
+      onEachFeature:(f,l)=>l.bindTooltip(esc(f.properties.nombre)+' · '+fmt(f.properties.km)+' km', {sticky:true}) })
+      .addTo(GRUPO_PROV);
+    capas.vecinos = GRUPO_PROV;
+    mapa.on('moveend', cargarVisibles);
+    document.getElementById('c_vecinos').addEventListener('change', cargarVisibles);
+    setTimeout(cargarVisibles, 0);
+  }
+  for (const r of document.querySelectorAll('input[name=modo]')) r.onchange = () => {
+    MODO = r.value;
+    document.getElementById('ley_cat').style.display = MODO==='cat' ? '' : 'none';
+    document.getElementById('ley_osm').style.display = MODO==='osm' ? '' : 'none';
+    if (capas.catastro) capas.catastro.setStyle(estiloCamino);
+    for (const l of Object.values(CARGADOS)) if (l && l.setStyle) l.setStyle(estiloCamino);
+  };
   LISTA = (await geo('campos_25_de_mayo_lista.json')) || [];
   const asignada = {};
   for (const c of LISTA) for (const p of c[4]) asignada[p] = c;

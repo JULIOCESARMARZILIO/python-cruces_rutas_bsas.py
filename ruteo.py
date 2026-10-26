@@ -259,7 +259,7 @@ def construir():
                 n += 1
                 continue
             if "highway" not in pr:   # catastro ARBA (caminos_catastro.py): solo los que no están en OSM
-                if pr.get("en_osm") == "no":
+                if pr.get("en_osm") in ("no", "sin_dato"):   # sin_dato: partido vecino sin OSM bajado
                     cu = f" (cuartel {pr['cuartel']})" if pr.get("cuartel") else ""
                     sueltos.append((g["coordinates"], "tierra", "camino de catastro" + cu, ENGANCHE_CATASTRO_KM))
                     n += 1
