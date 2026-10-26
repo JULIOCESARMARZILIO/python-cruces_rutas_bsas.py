@@ -6,6 +6,8 @@ primeros cruces de ruta saliendo para cada lado, con la distancia por ruta.
 Entrada:
   datos/padron_sisa.xlsx   (columnas: N° de planta, CUIT del titular, Titular,
                             Actividades, Localidad, Provincia, ...)
+  datos/padron_sisa_extra.csv  (mismas columnas; plantas de otras provincias o actividades
+                            sacadas del listado público de ARCA, consulta SISA plantas)
   DIR_SALIDA/red_rutas.json  (lo genera procesar_osm.py)
   DIR_SALIDA/cruces_*.csv
 Salida:
@@ -28,6 +30,7 @@ import requests
 
 DIR_SALIDA = os.environ.get("DIR_SALIDA", "/data/salida")
 PADRON = os.environ.get("PADRON_SISA", "datos/padron_sisa.xlsx")
+PADRON_EXTRA = os.environ.get("PADRON_SISA_EXTRA", "datos/padron_sisa_extra.csv")
 VERIFICADAS = os.environ.get("PLANTAS_VERIFICADAS", "datos/plantas_verificadas.csv")
 KEY = os.environ.get("GOOGLE_PLACES_KEY", "")
 URL = "https://places.googleapis.com/v1/places:searchText"
@@ -192,6 +195,10 @@ def main():
     filas = list(wb.worksheets[0].iter_rows(values_only=True))
     hdr = [str(h).strip() for h in filas[0]]
     plantas = [dict(zip(hdr, r)) for r in filas[1:] if r and r[0]]
+    if os.path.exists(PADRON_EXTRA):
+        ya = {str(p.get("N° de planta")).strip() for p in plantas}
+        with open(PADRON_EXTRA, encoding="utf-8") as f:
+            plantas += [r for r in csv.DictReader(f) if r["N° de planta"].strip() not in ya]
     log(f"Plantas en el padrón: {len(plantas)}")
 
     verificadas = {}

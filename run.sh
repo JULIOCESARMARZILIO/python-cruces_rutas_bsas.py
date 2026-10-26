@@ -17,8 +17,12 @@ if [ -n "$GOOGLE_PLACES_KEY" ] && [ "$FORZAR_GOOGLE" = "1" ]; then
   python silos_google.py || echo "silos_google.py terminó con error (se sigue igual)"
 fi
 # plantas del padrón SISA ubicadas con Google y enganchadas a la red de rutas
-if [ -n "$GOOGLE_PLACES_KEY" ] && { [ "$FORZAR_PLANTAS" = "1" ] || [ ! -f "$DIR_SALIDA/plantas_sisa.csv" ]; }; then
-  python plantas_sisa.py || echo "plantas_sisa.py terminó con error (se sigue igual)"
+# (se rehace si cambió el padrón o las verificadas; el caché evita repetir búsquedas)
+HASH_PLANTAS=$(cat datos/padron_sisa.xlsx datos/padron_sisa_extra.csv datos/plantas_verificadas.csv 2>/dev/null | md5sum | cut -d' ' -f1)
+if [ -n "$GOOGLE_PLACES_KEY" ] && { [ "$FORZAR_PLANTAS" = "1" ] || [ ! -f "$DIR_SALIDA/plantas_sisa.csv" ] \
+     || [ "$HASH_PLANTAS" != "$(cat "$DIR_SALIDA/plantas_sisa.hash" 2>/dev/null)" ]; }; then
+  python plantas_sisa.py && echo "$HASH_PLANTAS" > "$DIR_SALIDA/plantas_sisa.hash" \
+    || echo "plantas_sisa.py terminó con error (se sigue igual)"
 fi
 python secuencias_rutas.py || true
 # terminales portuarias de granos + distancia por ruta desde 25 de Mayo (y Google si hay clave)
