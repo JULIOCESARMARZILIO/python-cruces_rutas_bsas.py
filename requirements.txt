@@ -2,3 +2,4 @@ requests>=2.31
 osmium>=4.0
 shapely>=2.0
 openpyxl>=3.1
+psycopg[binary]>=3.1
