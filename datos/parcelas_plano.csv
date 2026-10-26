@@ -801,9 +801,9 @@ id,zona,cuartel,propietario,tipo,hectareas,confianza,nota,lat,lon,partidas
 800,Cuartel V (Bella Vista / Criadero Klein),V,Maria Paula Citrino,,425,alta,foto IMG_9527,,,
 801,Cuartel V (Bella Vista / Criadero Klein),V,Pedalino,,67,alta,foto IMG_9527,,,
 802,Cuartel V (Bella Vista / Criadero Klein),V,Coltrinari Hnos.,,,media,foto IMG_9527,,,
-803,Cuartel IV (Riestra / Pedernales),IV,Facundo Ferrari Torres,,,media,foto IMG_9527,,,
+803,Cuartel IV (Riestra / Pedernales),IV,Facundo Ferrari Torres,,,baja,foto IMG_9527; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.21145,-59.75060,109001209
 804,Cuartel IV (Riestra / Pedernales),IV,Enrique Kilmurry,,114,alta,foto IMG_9527,,,
-805,Cuartel IV (Riestra / Pedernales),IV,Oscar Cangini,,,media,foto IMG_9527,,,
+805,Cuartel IV (Riestra / Pedernales),IV,Oscar Cangini,,,baja,foto IMG_9527; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.26053,-59.81810,109001671
 806,Cuartel IV (Riestra / Pedernales),IV,Herben S.A.,,110,alta,foto IMG_9527,,,
 807,Ernestina / Pedernales,IV,O.R. Romero,,87,media,foto IMG_9528,,,
 808,Ernestina / Pedernales,IV,C. Fioretti,,121,alta,foto IMG_9528,,,
@@ -911,47 +911,47 @@ id,zona,cuartel,propietario,tipo,hectareas,confianza,nota,lat,lon,partidas
 910,Cuartel IV (Riestra / Pedernales),IV,R. Diaz,,,media,foto IMG_9530,,,
 911,Cuartel IV (Riestra / Pedernales),IV,Olives,,,media,foto IMG_9530,,,
 912,Cuartel IV (Riestra / Pedernales),IV,Capar.,,,baja,foto IMG_9530,,,
-913,Cuartel IV (Riestra / Pedernales),IV,Jorge Lambertucci,,,media,foto IMG_9531,,,
+913,Cuartel IV (Riestra / Pedernales),IV,Jorge Lambertucci,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.28927,-59.81382,109011206
 914,Cuartel IV (Riestra / Pedernales),IV,Land de Crimiti S.R.L.,,136,media,foto IMG_9531,,,
 915,Cuartel IV (Riestra / Pedernales),IV,Riestra Rural S.A.C.,,132,alta,foto IMG_9531,,,
-916,Cuartel IV (Riestra / Pedernales),IV,Desiervi,,,media,foto IMG_9531,,,
-917,Cuartel IV (Riestra / Pedernales),IV,Mario Outeiriño,,,media,foto IMG_9531,,,
+916,Cuartel IV (Riestra / Pedernales),IV,Desiervi,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.28212,-59.78750,109008193
+917,Cuartel IV (Riestra / Pedernales),IV,Mario Outeiriño,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.28844,-59.78033,109002207
 918,Cuartel IV (Riestra / Pedernales),IV,Perez,,107,media,foto IMG_9531,,,
 919,Cuartel IV (Riestra / Pedernales),IV,Perez Ar.,,93,media,foto IMG_9531,,,
 920,Cuartel IV (Riestra / Pedernales),IV,Mac,,40,baja,foto IMG_9531,,,
-921,Cuartel IV (Riestra / Pedernales),IV,Forastegui,,,media,foto IMG_9531,,,
-922,Cuartel IV (Riestra / Pedernales),IV,Enrico,,,media,foto IMG_9531,,,
-923,Cuartel IV (Riestra / Pedernales),IV,Agostinelli,,,media,foto IMG_9531,,,
-924,Cuartel IV (Riestra / Pedernales),IV,Masalias,,,media,foto IMG_9531,,,
-925,Cuartel IV (Riestra / Pedernales),IV,Perez Aranaz,,,media,foto IMG_9531,,,
-926,Cuartel IV (Riestra / Pedernales),IV,Roig,,,media,foto IMG_9531,,,
-927,Cuartel IV (Riestra / Pedernales),IV,Kenny,,,media,foto IMG_9531,,,
-928,Cuartel IV (Riestra / Pedernales),IV,Quatrini,,,media,foto IMG_9531,,,
-929,Cuartel IV (Riestra / Pedernales),IV,Favala,,,media,foto IMG_9531,,,
+921,Cuartel IV (Riestra / Pedernales),IV,Forastegui,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.29348,-59.76760,109008276
+922,Cuartel IV (Riestra / Pedernales),IV,Enrico,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.30310,-59.79990,109011724
+923,Cuartel IV (Riestra / Pedernales),IV,Agostinelli,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.30485,-59.80372,109011723
+924,Cuartel IV (Riestra / Pedernales),IV,Masalias,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.29897,-59.79533,109011725
+925,Cuartel IV (Riestra / Pedernales),IV,Perez Aranaz,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.30417,-59.78692,109011956
+926,Cuartel IV (Riestra / Pedernales),IV,Roig,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.30725,-59.78217,109000365
+927,Cuartel IV (Riestra / Pedernales),IV,Kenny,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.31020,-59.77990,109026711
+928,Cuartel IV (Riestra / Pedernales),IV,Quatrini,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.31684,-59.78950,109016377
+929,Cuartel IV (Riestra / Pedernales),IV,Favala,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.31673,-59.76999,109002212
 930,Cuartel IV (Riestra / Pedernales),IV,And.,,100,baja,foto IMG_9531,,,
-931,Cuartel IV (Riestra / Pedernales),IV,R. Kenny,,,media,foto IMG_9531,,,
-932,Cuartel IV (Riestra / Pedernales),IV,Velazquez,,,media,foto IMG_9531,,,
-933,Cuartel IV (Riestra / Pedernales),IV,Cuatrini,,,media,foto IMG_9531,,,
-934,Cuartel IV (Riestra / Pedernales),IV,G. Diaz,,,media,foto IMG_9531,,,
-935,Cuartel IV (Riestra / Pedernales),IV,Oscar Acosta,,,media,foto IMG_9531,,,
+931,Cuartel IV (Riestra / Pedernales),IV,R. Kenny,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.32111,-59.77638,109000135
+932,Cuartel IV (Riestra / Pedernales),IV,Velazquez,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.32420,-59.77962,109029467
+933,Cuartel IV (Riestra / Pedernales),IV,Cuatrini,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.32680,-59.77197,109019767
+934,Cuartel IV (Riestra / Pedernales),IV,G. Diaz,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.32276,-59.75842,109002229
+935,Cuartel IV (Riestra / Pedernales),IV,Oscar Acosta,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.33927,-59.75330,109025252
 936,Cuartel IV (Riestra / Pedernales),IV,F. Gallo,,55,alta,foto IMG_9531,,,
 937,Cuartel IV (Riestra / Pedernales),IV,J. Raggio,,107,alta,foto IMG_9531,,,
 938,Cuartel IV (Riestra / Pedernales),IV,Kenny,,30,alta,foto IMG_9531,,,
-939,Cuartel IV (Riestra / Pedernales),IV,Ronsino,,,media,foto IMG_9531,,,
-940,Cuartel IV (Riestra / Pedernales),IV,Bertoia,,,media,foto IMG_9531,,,
+939,Cuartel IV (Riestra / Pedernales),IV,Ronsino,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.30227,-59.73469,109006130
+940,Cuartel IV (Riestra / Pedernales),IV,Bertoia,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.30355,-59.73786,109008432
 941,Cuartel IV (Riestra / Pedernales),IV,Spinetta,,78,media,foto IMG_9531,,,
-942,Cuartel IV (Riestra / Pedernales),IV,Morbidoni,,,media,foto IMG_9531,,,
-943,Cuartel IV (Riestra / Pedernales),IV,Guido,,,media,foto IMG_9531,,,
-944,Cuartel IV (Riestra / Pedernales),IV,Agost.,,,baja,foto IMG_9531,,,
-945,Cuartel IV (Riestra / Pedernales),IV,Claudio Cangini,,,media,foto IMG_9532,,,
-946,Cuartel IV (Riestra / Pedernales),IV,Francisco Zazzarini,,,media,foto IMG_9532,,,
-947,Cuartel IV (Riestra / Pedernales),IV,Garrote,,,media,foto IMG_9532,,,
-948,Cuartel IV (Riestra / Pedernales),IV,Campos Riestra,,,media,foto IMG_9532,,,
-949,Cuartel IV (Riestra / Pedernales),IV,Juan Gallo,,,media,foto IMG_9532,,,
-950,Cuartel IV (Riestra / Pedernales),IV,J. Guido Baldi,,,media,foto IMG_9532,,,
-951,Cuartel IV (Riestra / Pedernales),IV,A. San Martin,,,media,foto IMG_9532,,,
-952,Cuartel IV (Riestra / Pedernales),IV,Mesina Cangini,,,media,foto IMG_9532,,,
-953,Cuartel IV (Riestra / Pedernales),IV,G. Gotelli,,,media,foto IMG_9532,,,
+942,Cuartel IV (Riestra / Pedernales),IV,Morbidoni,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.31208,-59.74780,109001403
+943,Cuartel IV (Riestra / Pedernales),IV,Guido,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.25392,-59.76005,109009898
+944,Cuartel IV (Riestra / Pedernales),IV,Agost.,,,baja,foto IMG_9531; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.25037,-59.73157,109016252
+945,Cuartel IV (Riestra / Pedernales),IV,Claudio Cangini,,,baja,foto IMG_9532; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.23777,-59.75418,109019501
+946,Cuartel IV (Riestra / Pedernales),IV,Francisco Zazzarini,,,baja,foto IMG_9532; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.24182,-59.75841,109008201
+947,Cuartel IV (Riestra / Pedernales),IV,Garrote,,,baja,foto IMG_9532; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.25151,-59.78314,109008752
+948,Cuartel IV (Riestra / Pedernales),IV,Campos Riestra,,,baja,foto IMG_9532; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.24258,-59.77214,109016354
+949,Cuartel IV (Riestra / Pedernales),IV,Juan Gallo,,,baja,foto IMG_9532; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.25442,-59.74281,109010118
+950,Cuartel IV (Riestra / Pedernales),IV,J. Guido Baldi,,,baja,foto IMG_9532; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.24368,-59.74564,109010586
+951,Cuartel IV (Riestra / Pedernales),IV,A. San Martin,,,baja,foto IMG_9532; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.25716,-59.80361,109000131
+952,Cuartel IV (Riestra / Pedernales),IV,Mesina Cangini,,,baja,foto IMG_9532; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.25480,-59.79895,109016361
+953,Cuartel IV (Riestra / Pedernales),IV,G. Gotelli,,,baja,foto IMG_9532; ubicado con foto del plano de Riestra (ancla el pueblo y campos con ha); ha = parcela ARBA bajo el rotulo,-35.27929,-59.82313,109012037
 954,Cuartel IV (Riestra / Pedernales),IV,Paolini,,48,media,foto IMG_9532,,,
 955,Cuartel V (Bella Vista / Criadero Klein),V,Galpon Azul S.A.,,,media,fraccion chica; foto IMG_9533,,,
 956,Cuartel V (Bella Vista / Criadero Klein),V,Criaderos Klein S.A.,,,media,fraccion chica; foto IMG_9533,,,
