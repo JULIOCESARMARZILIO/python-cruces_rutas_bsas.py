@@ -403,11 +403,11 @@ id,zona,cuartel,propietario,tipo,hectareas,confianza,nota,lat,lon,partidas
 402,Cuartel IV (Riestra / Pedernales),IV,Tozzi S.A.,,820,alta,,,,
 403,Cuartel IV (Riestra / Pedernales),IV,Tozzi S.A.,,274,alta,,,,
 404,Cuartel IV (Riestra / Pedernales),IV,Adela Martinez Orte,,368,alta,,,,
-405,Cuartel IV (Riestra / Pedernales),IV,Raul Elverdin,,364,alta,,,,
-406,Cuartel IV (Riestra / Pedernales),IV,Juan M. Amuchastegui,,596,alta,,,,
-407,Cuartel IV (Riestra / Pedernales),IV,Federico A. Amuchastegui,,,baja,hectareas ilegibles,,,
+405,Cuartel IV (Riestra / Pedernales),IV,Raul Elverdin,,364,alta,"ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109028139 109002020 109028140 109028141
+406,Cuartel IV (Riestra / Pedernales),IV,Juan M. Amuchastegui,,596,alta,"ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109001204
+407,Cuartel IV (Riestra / Pedernales),IV,Federico A. Amuchastegui,,,baja,"hectareas ilegibles; ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109026463
 408,Cuartel IV (Riestra / Pedernales),IV,Elverdin,,354,alta,,,,
-409,Cuartel IV (Riestra / Pedernales),IV,Juan A. Elverdin,,283,media,,,,
+409,Cuartel IV (Riestra / Pedernales),IV,Juan A. Elverdin,,283,media,"ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109024095
 410,Cuartel IV (Riestra / Pedernales),IV,La Yerba y Asoc.,,795,alta,,,,
 411,Cuartel IV (Riestra / Pedernales),IV,Herben S.A.C.I.,,154,media,,,,
 412,Cuartel IV (Riestra / Pedernales),IV,Adelto S.A.,,123,media,,,,
@@ -814,12 +814,12 @@ id,zona,cuartel,propietario,tipo,hectareas,confianza,nota,lat,lon,partidas
 813,Ernestina / Pedernales,IV,Verastegui,,80,media,foto IMG_9528,,,
 814,Ernestina / Pedernales,IV,O. Tibi,,,media,foto IMG_9528,,,
 815,Ernestina / Pedernales,IV,Guill. Longeveld,,,media,foto IMG_9528,,,
-816,Ernestina / Pedernales,IV,Raul Elverdin,,,media,foto IMG_9528,,,
+816,Ernestina / Pedernales,IV,Raul Elverdin,,,media,"foto IMG_9528; ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109016246
 817,Ernestina / Pedernales,IV,Elverdin,,,media,foto IMG_9528,,,
-818,Ernestina / Pedernales,IV,Kemet,,,media,foto IMG_9528,,,
-819,Ernestina / Pedernales,IV,Jose M. Elverdin,,366,alta,foto IMG_9528,,,
-820,Ernestina / Pedernales,IV,J. Santia,,,media,foto IMG_9528,,,
-821,Ernestina / Pedernales,IV,M. Santia,,,media,foto IMG_9528,,,
+818,Ernestina / Pedernales,IV,Kemet,,,media,"foto IMG_9528; ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109024094
+819,Ernestina / Pedernales,IV,Jose M. Elverdin,,366,alta,"foto IMG_9528; ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109000762
+820,Ernestina / Pedernales,IV,J. Santia,,,media,"foto IMG_9528; ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109016247
+821,Ernestina / Pedernales,IV,M. Santia,,,media,"foto IMG_9528; ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109002019
 822,Ernestina / Pedernales,IV,Volpi,,,media,foto IMG_9528,,,
 823,Ernestina / Pedernales,IV,Garz.,,,baja,foto IMG_9528,,,
 824,Ernestina / Pedernales,IV,Fiore,,87,media,foto IMG_9528,,,
@@ -831,7 +831,7 @@ id,zona,cuartel,propietario,tipo,hectareas,confianza,nota,lat,lon,partidas
 830,Ernestina / Pedernales,IV,L.A. Elverdin,,125,alta,foto IMG_9528,,,
 831,Ernestina / Pedernales,IV,Juan Elverdin,,,media,foto IMG_9528,,,
 832,Ernestina / Pedernales,IV,Jorge Elverdin,,,media,foto IMG_9528,,,
-833,Ernestina / Pedernales,IV,Emiliano Ricciardelli,,,media,foto IMG_9528,,,
+833,Ernestina / Pedernales,IV,Emiliano Ricciardelli,,,media,"foto IMG_9528; ubicado con foto IMG_9528 y anclas (Santia, Ernestina)",,,109023482
 834,Ernestina / Pedernales,IV,Amuchastegui,,,media,foto IMG_9528,,,
 835,Ernestina / Pedernales,IV,Michetti,,,media,foto IMG_9528,,,
 836,Ernestina / Pedernales,IV,Ricci,,,media,foto IMG_9528,,,
