@@ -52,11 +52,13 @@
     <b>Flete: tarifa de referencia CATAC</b>
     <div class="sub">Viene cargada la de cereales y oleaginosas del 10 de abril de 2026 (pesos por tonelada).
       Cada viaje se redondea al tramo de 10 km de arriba. Podés subirla o bajarla con el porcentaje.</div>
-    <label>Ajuste sobre la tarifa (%) <input type="number" id="fAjuste" step="1"></label>
+    <label>Ajuste sobre la tarifa (%) <input type="number" id="fAjuste" step="any"></label>
     <div class="botones" style="margin:2px 0 6px">
-      <button class="x" data-aj="-20">−20 %</button><button class="x" data-aj="-10">−10 %</button>
-      <button class="x" data-aj="0">CATAC</button><button class="x" data-aj="10">+10 %</button>
-      <button class="x" data-aj="20">+20 %</button></div>
+      <button class="x" data-paso="-1">−1 %</button>
+      <input type="range" id="fAjusteBarra" min="-30" max="30" step="1" style="flex:1;min-width:120px">
+      <button class="x" data-paso="1">+1 %</button>
+      <button class="x" data-aj="0">CATAC</button></div>
+    <div class="sub">Cualquier número: 11, −12, 7,5… La barra va de −30 a +30.</div>
     <details><summary>Ver o cambiar la tabla</summary>
       <div class="sub">Una línea por tramo: «km hasta; pesos por tonelada».</div>
       <textarea id="fTabla" rows="6" style="width:100%;font-family:monospace;font-size:12px"></textarea>
@@ -163,17 +165,22 @@ function dibujarDestinos() {
 function dibujarFlete() {
   $('fTabla').value = flete.tabla; $('fDolar').value = flete.dolar; $('fTierra').value = flete.tierra;
   $('fAjuste').value = flete.ajuste || 0;
+  $('fAjusteBarra').value = Math.max(-30, Math.min(30, flete.ajuste || 0));
   leerTabla();
   $('ej1').textContent = fmt(costo(100, 0)); $('ej3').textContent = fmt(costo(300, 0)); $('ej5').textContent = fmt(costo(500, 0));
 }
 ['fTabla','fDolar','fTierra','fAjuste'].forEach(id => $(id).onchange = () => {
-  flete = {v: 2, tabla: $('fTabla').value, ajuste: parseFloat($('fAjuste').value) || 0,
+  flete = {v: 2, tabla: $('fTabla').value, ajuste: parseFloat(String($('fAjuste').value).replace(',', '.')) || 0,
            dolar: parseFloat($('fDolar').value) || 1, tierra: parseFloat($('fTierra').value) || 0};
   guardar(); dibujarFlete(); pintar();
 });
 document.querySelectorAll('[data-aj]').forEach(b => b.onclick = () => {
   $('fAjuste').value = b.dataset.aj; $('fAjuste').onchange();
 });
+document.querySelectorAll('[data-paso]').forEach(b => b.onclick = () => {
+  $('fAjuste').value = (parseFloat($('fAjuste').value) || 0) + parseFloat(b.dataset.paso); $('fAjuste').onchange();
+});
+$('fAjusteBarra').oninput = () => { $('fAjuste').value = $('fAjusteBarra').value; $('fAjuste').onchange(); };
 $('fCatac').onclick = () => { $('fTabla').value = tablaCatac(); $('fTabla').onchange(); };
 
 function estado(t, err) { $('estado').innerHTML = err ? `<span class="err">${esc(t)}</span>` : esc(t); }
