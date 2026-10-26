@@ -1,33 +1,33 @@
-id,terminal,empresa,localidad,provincia,zona,tipo,lat,lon,fuente
-1,Renova Timbúes,Renova S.A.,Timbúes,Santa Fe,Up-River norte,granos y aceites,-32.58395,-60.79240,OSM landuse Renova + satélite
-2,LDC Timbúes,LDC Argentina S.A. (Louis Dreyfus),Timbúes,Santa Fe,Up-River norte,granos y aceites,-32.59680,-60.77360,OSM Louis Dreyfus Commodities + satélite
-3,COFCO Timbúes,COFCO International Argentina S.A.,Timbúes,Santa Fe,Up-River norte,granos y aceites,-32.60542,-60.76577,OSM Cofco International Argentina + satélite
-4,ACA Timbúes,Asociación de Cooperativas Argentinas,Timbúes,Santa Fe,Up-River norte,granos,-32.61810,-60.76160,OSM Muelle ACA Timbúes (km 461) + satélite
-5,AGD Timbúes,Aceitera General Deheza S.A.,Timbúes,Santa Fe,Up-River norte,granos,-32.62400,-60.75900,OSM Muelle AGD Timbúes (km 460) + satélite
-6,Terminal 6,Terminal 6 S.A. (AGD - Bunge),Puerto General San Martín,Santa Fe,Up-River norte,granos y aceites,-32.65350,-60.74250,OSM Terminal 6 S.A + satélite
-7,Terminal Quebracho,Cargill S.A.C.I.,Puerto General San Martín,Santa Fe,Up-River norte,granos y aceites,-32.66500,-60.73220,OSM Cargill Terminal Quebracho + satélite
-8,COFCO Puerto General San Martín,COFCO International Argentina S.A. (ex Nidera),Puerto General San Martín,Santa Fe,Up-River norte,granos y aceites,-32.69380,-60.72660,OSM Cofco PGSM + satélite
-9,Terminal El Tránsito,ADM Agro S.R.L.,Puerto General San Martín,Santa Fe,Up-River norte,granos,-32.70725,-60.72675,OSM ADM Agro Terminal El Tránsito + satélite
-10,Terminal Pampa,Bunge Argentina S.A.,Puerto General San Martín,Santa Fe,Up-River norte,granos y aceites,-32.71175,-60.72735,OSM Bunge Terminal Muelle Pampa + satélite
-11,Terminal Dempa,Bunge Argentina S.A.,Puerto General San Martín,Santa Fe,Up-River norte,granos y aceites,-32.71738,-60.72676,OSM Bunge Terminal Muelle Dempa + satélite
-12,ACA San Lorenzo,Asociación de Cooperativas Argentinas,San Lorenzo,Santa Fe,Up-River norte,granos,-32.73570,-60.72900,OSM Muelle ACA San Lorenzo (km 446) + satélite
-13,Vicentin San Lorenzo,Vicentin S.A.I.C.,San Lorenzo,Santa Fe,Up-River norte,granos y aceites,-32.77077,-60.72577,OSM Aceitera Vicentín + satélite
-14,Molinos Agro San Lorenzo,Molinos Agro S.A.,San Lorenzo,Santa Fe,Up-River norte,granos y aceites,-32.77491,-60.72338,OSM Molinos Agro + satélite
-15,Rosario Unidades 6 y 7,Servicios Portuarios S.A.,Rosario,Santa Fe,Up-River sur,granos,-32.98361,-60.61904,OSM Servicios Portuarios / Unidad 6 + satélite
-16,Cargill Villa Gobernador Gálvez,Cargill S.A.C.I.,Villa Gobernador Gálvez,Santa Fe,Up-River sur,granos y aceites,-33.03768,-60.58747,OSM Cargill Argentina + satélite
-17,Cargill Punta Alvear,Cargill S.A.C.I.,Alvear,Santa Fe,Up-River sur,granos y aceites,-33.04960,-60.57739,OSM Punta Alvear - Cargill + satélite
-18,LDC General Lagos,LDC Argentina S.A. (Louis Dreyfus),General Lagos,Santa Fe,Up-River sur,granos y aceites,-33.12318,-60.52224,OSM Dreyfus Lagos - LDC + satélite
-19,ADM Arroyo Seco,ADM Agro S.R.L. (ex Toepfer),Arroyo Seco,Santa Fe,Up-River sur,granos,-33.12915,-60.51275,OSM Toepfer Arroyo Seco + satélite
-20,Puerto Villa Constitución Unidad II,Puerto de Villa Constitución,Villa Constitución,Santa Fe,Up-River sur,multipropósito,-33.22188,-60.33177,OSM Puerto de Villa Constitución - Unidad II + satélite
-21,Bunge Ramallo,Bunge Argentina S.A.,Ramallo,Buenos Aires,Paraná inferior,granos y aceites,-33.45355,-60.04395,OSM Bunge Ramallo + satélite
-22,Elevador de granos San Pedro,Puerto de San Pedro,San Pedro,Buenos Aires,Paraná inferior,granos,-33.68715,-59.64566,OSM Elevador de granos de San Pedro + satélite
-23,Puerto Quequén - terminal de granos (margen Quequén),Puerto Quequén,Quequén,Buenos Aires,Quequén,granos,-38.57282,-58.70684,satélite (complejo de silos sobre el muelle)
-24,Sitio 0 de Quequén,Puerto Quequén,Quequén,Buenos Aires,Quequén,granos,-38.57620,-58.70040,OSM Sitio 0 de Quequén + satélite
-25,Terminal Bahía Blanca,Terminal Bahía Blanca S.A.,Ingeniero White,Buenos Aires,Bahía Blanca,granos,-38.78900,-62.26780,OSM Terminal Bahía Blanca SA + satélite
-26,Cargill Bahía Blanca,Cargill S.A.C.I.,Ingeniero White,Buenos Aires,Bahía Blanca,granos,-38.78640,-62.27400,OSM Cargill SAIC + satélite
-27,ADM Bahía Blanca,ADM Agro S.R.L. (ex Toepfer),Ingeniero White,Buenos Aires,Bahía Blanca,granos,-38.78899,-62.25868,OSM Toepfer + satélite
-28,Oleaginosa Moreno Galván,Oleaginosa Moreno Hnos. S.A.,Puerto Galván,Buenos Aires,Bahía Blanca,granos y aceites,-38.78016,-62.30176,OSM Oleaginosa Moreno Hermanos + satélite
-29,Puerto Diamante - elevador,Puerto Diamante,Diamante,Entre Ríos,Paraná medio,granos,-32.05390,-60.64080,satélite (elevador sobre la costa)
-30,Puerto Ibicuy,Puerto Ibicuy,Ibicuy,Entre Ríos,Paraná inferior,multipropósito,-33.75647,-59.17841,OSM Puerto Ibicuy + satélite
-31,Puerto Concepción del Uruguay,Puerto Concepción del Uruguay,Concepción del Uruguay,Entre Ríos,Río Uruguay,multipropósito,-32.47841,-58.22102,OSM acceso a puerto + satélite
-32,Puerto Barranqueras,Puerto Barranqueras,Barranqueras,Chaco,Paraná medio,multipropósito,-27.49020,-58.92545,OSM Puerto de Barranqueras + satélite
+id,terminal,empresa,localidad,provincia,zona,tipo,lat,lon,via,fuente
+1,Renova Timbúes,Renova S.A.,Timbúes,Santa Fe,Up-River norte,granos y aceites,-32.58395,-60.79240,,OSM landuse Renova + satélite
+2,LDC Timbúes,LDC Argentina S.A. (Louis Dreyfus),Timbúes,Santa Fe,Up-River norte,granos y aceites,-32.59680,-60.77360,,OSM Louis Dreyfus Commodities + satélite
+3,COFCO Timbúes,COFCO International Argentina S.A.,Timbúes,Santa Fe,Up-River norte,granos y aceites,-32.60542,-60.76577,,OSM Cofco International Argentina + satélite
+4,ACA Timbúes,Asociación de Cooperativas Argentinas,Timbúes,Santa Fe,Up-River norte,granos,-32.61810,-60.76160,,OSM Muelle ACA Timbúes (km 461) + satélite
+5,AGD Timbúes,Aceitera General Deheza S.A.,Timbúes,Santa Fe,Up-River norte,granos,-32.62400,-60.75900,,OSM Muelle AGD Timbúes (km 460) + satélite
+6,Terminal 6,Terminal 6 S.A. (AGD - Bunge),Puerto General San Martín,Santa Fe,Up-River norte,granos y aceites,-32.65350,-60.74250,,OSM Terminal 6 S.A + satélite
+7,Terminal Quebracho,Cargill S.A.C.I.,Puerto General San Martín,Santa Fe,Up-River norte,granos y aceites,-32.66500,-60.73220,,OSM Cargill Terminal Quebracho + satélite
+8,COFCO Puerto General San Martín,COFCO International Argentina S.A. (ex Nidera),Puerto General San Martín,Santa Fe,Up-River norte,granos y aceites,-32.69380,-60.72660,,OSM Cofco PGSM + satélite
+9,Terminal El Tránsito,ADM Agro S.R.L.,Puerto General San Martín,Santa Fe,Up-River norte,granos,-32.70725,-60.72675,,OSM ADM Agro Terminal El Tránsito + satélite
+10,Terminal Pampa,Bunge Argentina S.A.,Puerto General San Martín,Santa Fe,Up-River norte,granos y aceites,-32.71175,-60.72735,,OSM Bunge Terminal Muelle Pampa + satélite
+11,Terminal Dempa,Bunge Argentina S.A.,Puerto General San Martín,Santa Fe,Up-River norte,granos y aceites,-32.71738,-60.72676,,OSM Bunge Terminal Muelle Dempa + satélite
+12,ACA San Lorenzo,Asociación de Cooperativas Argentinas,San Lorenzo,Santa Fe,Up-River norte,granos,-32.73570,-60.72900,,OSM Muelle ACA San Lorenzo (km 446) + satélite
+13,Vicentin San Lorenzo,Vicentin S.A.I.C.,San Lorenzo,Santa Fe,Up-River norte,granos y aceites,-32.77077,-60.72577,,OSM Aceitera Vicentín + satélite
+14,Molinos Agro San Lorenzo,Molinos Agro S.A.,San Lorenzo,Santa Fe,Up-River norte,granos y aceites,-32.77491,-60.72338,,OSM Molinos Agro + satélite
+15,Rosario Unidades 6 y 7,Servicios Portuarios S.A.,Rosario,Santa Fe,Up-River sur,granos,-32.98361,-60.61904,,OSM Servicios Portuarios / Unidad 6 + satélite
+16,Cargill Villa Gobernador Gálvez,Cargill S.A.C.I.,Villa Gobernador Gálvez,Santa Fe,Up-River sur,granos y aceites,-33.03768,-60.58747,,OSM Cargill Argentina + satélite
+17,Cargill Punta Alvear,Cargill S.A.C.I.,Alvear,Santa Fe,Up-River sur,granos y aceites,-33.04960,-60.57739,,OSM Punta Alvear - Cargill + satélite
+18,LDC General Lagos,LDC Argentina S.A. (Louis Dreyfus),General Lagos,Santa Fe,Up-River sur,granos y aceites,-33.12318,-60.52224,,OSM Dreyfus Lagos - LDC + satélite
+19,ADM Arroyo Seco,ADM Agro S.R.L. (ex Toepfer),Arroyo Seco,Santa Fe,Up-River sur,granos,-33.12915,-60.51275,,OSM Toepfer Arroyo Seco + satélite
+20,Puerto Villa Constitución Unidad II,Puerto de Villa Constitución,Villa Constitución,Santa Fe,Up-River sur,multipropósito,-33.22188,-60.33177,,OSM Puerto de Villa Constitución - Unidad II + satélite
+21,Bunge Ramallo,Bunge Argentina S.A.,Ramallo,Buenos Aires,Paraná inferior,granos y aceites,-33.45355,-60.04395,Sánchez (Villa General Savio);-33.4350;-60.1460,OSM Bunge Ramallo + satélite
+22,Elevador de granos San Pedro,Puerto de San Pedro,San Pedro,Buenos Aires,Paraná inferior,granos,-33.68715,-59.64566,,OSM Elevador de granos de San Pedro + satélite
+23,Puerto Quequén - terminal de granos (margen Quequén),Puerto Quequén,Quequén,Buenos Aires,Quequén,granos,-38.57282,-58.70684,,satélite (complejo de silos sobre el muelle)
+24,Sitio 0 de Quequén,Puerto Quequén,Quequén,Buenos Aires,Quequén,granos,-38.57620,-58.70040,,OSM Sitio 0 de Quequén + satélite
+25,Terminal Bahía Blanca,Terminal Bahía Blanca S.A.,Ingeniero White,Buenos Aires,Bahía Blanca,granos,-38.78900,-62.26780,,OSM Terminal Bahía Blanca SA + satélite
+26,Cargill Bahía Blanca,Cargill S.A.C.I.,Ingeniero White,Buenos Aires,Bahía Blanca,granos,-38.78640,-62.27400,,OSM Cargill SAIC + satélite
+27,ADM Bahía Blanca,ADM Agro S.R.L. (ex Toepfer),Ingeniero White,Buenos Aires,Bahía Blanca,granos,-38.78899,-62.25868,,OSM Toepfer + satélite
+28,Oleaginosa Moreno Galván,Oleaginosa Moreno Hnos. S.A.,Puerto Galván,Buenos Aires,Bahía Blanca,granos y aceites,-38.78016,-62.30176,,OSM Oleaginosa Moreno Hermanos + satélite
+29,Puerto Diamante - elevador,Puerto Diamante,Diamante,Entre Ríos,Paraná medio,granos,-32.05390,-60.64080,,satélite (elevador sobre la costa)
+30,Puerto Ibicuy,Puerto Ibicuy,Ibicuy,Entre Ríos,Paraná inferior,multipropósito,-33.75647,-59.17841,,OSM Puerto Ibicuy + satélite
+31,Puerto Concepción del Uruguay,Puerto Concepción del Uruguay,Concepción del Uruguay,Entre Ríos,Río Uruguay,multipropósito,-32.47841,-58.22102,,OSM acceso a puerto + satélite
+32,Puerto Barranqueras,Puerto Barranqueras,Barranqueras,Chaco,Paraná medio,multipropósito,-27.49020,-58.92545,,OSM Puerto de Barranqueras + satélite
