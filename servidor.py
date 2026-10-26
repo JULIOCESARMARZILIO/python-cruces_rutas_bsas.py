@@ -7,6 +7,10 @@ Servidor HTTP mínimo (stdlib) para publicar DIR_SALIDA y buscar en los CSV:
   /api/lugares           campos, parcelas, plantas, acopios, puertos y pueblos (JSON)
   /api/ruta  (POST)      {"puntos": [[lat, lon], ...]} -> distancia por camino (ruteo.py)
   /api/zonas (POST)      {"destinos": [{lat, lon}, ...]} -> km de cada celda y campo a cada destino
+  /api/base              qué hay en la base (partidos, caminos, destinos, puntos, distancias)
+  /api/base/mejores      cada punto con el destino que más neto le deja (GeoJSON, desde la base)
+  /api/destino (POST)    {"nombre", "lat", "lon", "precio", "tipo"} -> alta en la base y cálculo
+                         de sus distancias en segundo plano (base_datos.py)
 """
 
 import csv
@@ -19,6 +23,7 @@ import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+import base_datos
 import ruteo
 
 DIR_SALIDA = os.environ.get("DIR_SALIDA", "/data/salida")
@@ -199,6 +204,11 @@ class Manejador(SimpleHTTPRequestHandler):
         u = urlparse(self.path)
         if u.path == "/api/lugares":
             return self._json({"ok": True, "lugares": ruteo.lugares()})
+        if u.path in ("/api/base", "/api/base/mejores"):
+            try:
+                return self._json(base_datos.estado() if u.path == "/api/base" else base_datos.mejores_geojson())
+            except Exception as e:  # noqa
+                return self._json({"ok": False, "error": f"base no disponible: {e}"}, 503)
         if u.path == "/api/ruta/estado":
             return self._json({"ok": True, **ruteo.estado()})
         if u.path != "/buscar":
@@ -266,6 +276,21 @@ class Manejador(SimpleHTTPRequestHandler):
                 return self._json(ruteo.ruta(puntos))
             except Exception as e:  # noqa
                 return self._json({"ok": False, "error": f"error calculando la ruta: {e}"}, 500)
+        if u.path == "/api/destino":
+            try:
+                nombre = str(cuerpo["nombre"]).strip()[:120]
+                lat, lon = float(cuerpo["lat"]), float(cuerpo["lon"])
+                precio = float(cuerpo["precio"]) if cuerpo.get("precio") not in (None, "") else None
+            except Exception:  # noqa
+                return self._json({"ok": False, "error": "faltan nombre, lat o lon"}, 400)
+            if not nombre or not (-56 < lat < -21 and -74 < lon < -53):
+                return self._json({"ok": False, "error": "nombre vacío o punto fuera de Argentina"}, 400)
+            tipo = (str(cuerpo.get("tipo") or "planta")).strip()[:30]
+            try:
+                did = base_datos.agregar_destino(nombre, tipo, precio, lat, lon)
+            except Exception as e:  # noqa
+                return self._json({"ok": False, "error": f"base no disponible: {e}"}, 503)
+            return self._json({"ok": True, "id": did, "nota": "las distancias se calculan en segundo plano"})
         if u.path == "/api/zonas":
             try:
                 destinos = [{"lat": float(d["lat"]), "lon": float(d["lon"]), "nombre": str(d.get("nombre") or "")[:80]}
@@ -359,4 +384,6 @@ if __name__ == "__main__":
     print(f"Sirviendo {DIR_SALIDA} en el puerto {PORT}", flush=True)
     # armar la red de ruteo en segundo plano para que la primera consulta no espere
     threading.Thread(target=ruteo.red_actual, daemon=True).start()
+    # y sincronizar la base (caminos, puntos y distancias que falten), si hay DATABASE_URL
+    threading.Thread(target=base_datos.sincronizar, daemon=True).start()
     ThreadingHTTPServer(("0.0.0.0", PORT), Manejador).serve_forever()
