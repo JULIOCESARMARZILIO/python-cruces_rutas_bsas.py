@@ -6,6 +6,7 @@ Servidor HTTP mínimo (stdlib) para publicar DIR_SALIDA y buscar en los CSV:
   /buscar?q=texto&f=csv  lo mismo en CSV
   /api/lugares           campos, parcelas, plantas, acopios, puertos y pueblos (JSON)
   /api/ruta  (POST)      {"puntos": [[lat, lon], ...]} -> distancia por camino (ruteo.py)
+  /api/zonas (POST)      {"destinos": [{lat, lon}, ...]} -> km de cada celda y campo a cada destino
 """
 
 import csv
@@ -265,6 +266,18 @@ class Manejador(SimpleHTTPRequestHandler):
                 return self._json(ruteo.ruta(puntos))
             except Exception as e:  # noqa
                 return self._json({"ok": False, "error": f"error calculando la ruta: {e}"}, 500)
+        if u.path == "/api/zonas":
+            try:
+                destinos = [{"lat": float(d["lat"]), "lon": float(d["lon"]), "nombre": str(d.get("nombre") or "")[:80]}
+                            for d in cuerpo["destinos"]]
+            except Exception:  # noqa
+                return self._json({"ok": False, "error": "destinos inválidos"}, 400)
+            if not 1 <= len(destinos) <= 15:
+                return self._json({"ok": False, "error": "hacen falta entre 1 y 15 destinos"}, 400)
+            try:
+                return self._json(ruteo.zonas(destinos))
+            except Exception as e:  # noqa
+                return self._json({"ok": False, "error": f"error calculando zonas: {e}"}, 500)
         if u.path == "/api/campo":
             try:
                 lat = float(cuerpo["lat"]); lon = float(cuerpo["lon"])
