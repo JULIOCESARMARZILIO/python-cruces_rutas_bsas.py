@@ -49,11 +49,18 @@
     <button id="reset">Volver a los de ejemplo</button>
   </div>
   <div class="flete">
-    <b>Flete: tarifa por tramos de 10 km</b>
-    <div class="sub">Pegá la tabla CATAC: una línea por tramo, «km hasta; pesos por tonelada».
-      Cada viaje se redondea al tramo de 10 km de arriba. La que viene cargada es aproximada
-      (FADEEAC marzo 2026 interpolada): reemplazala por la vigente.</div>
-    <textarea id="fTabla" rows="5" style="width:100%;font-family:monospace;font-size:12px"></textarea>
+    <b>Flete: tarifa de referencia CATAC</b>
+    <div class="sub">Viene cargada la de cereales y oleaginosas del 10 de abril de 2026 (pesos por tonelada).
+      Cada viaje se redondea al tramo de 10 km de arriba. Podés subirla o bajarla con el porcentaje.</div>
+    <label>Ajuste sobre la tarifa (%) <input type="number" id="fAjuste" step="1"></label>
+    <div class="botones" style="margin:2px 0 6px">
+      <button class="x" data-aj="-20">−20 %</button><button class="x" data-aj="-10">−10 %</button>
+      <button class="x" data-aj="0">CATAC</button><button class="x" data-aj="10">+10 %</button>
+      <button class="x" data-aj="20">+20 %</button></div>
+    <details><summary>Ver o cambiar la tabla</summary>
+      <div class="sub">Una línea por tramo: «km hasta; pesos por tonelada».</div>
+      <textarea id="fTabla" rows="6" style="width:100%;font-family:monospace;font-size:12px"></textarea>
+      <button id="fCatac" class="x">Volver a la CATAC abril 2026</button></details>
     <label>Dólar (pesos por USD) <input type="number" id="fDolar" step="10"></label>
     <label>Extra por km de tierra (USD/t) <input type="number" id="fTierra" step="0.005"></label>
     <div class="sub">Con esto: 100 km = <span id="ej1"></span> USD/t · 300 km = <span id="ej3"></span> USD/t ·
@@ -79,22 +86,15 @@ const EJEMPLO = [
   {nombre:'Trenque Lauquen', precio:370, lat:-35.9706, lon:-62.7316},
   {nombre:'Saladillo', precio:375, lat:-35.6400, lon:-59.7790},
 ];
-// Tarifa aproximada: puntos FADEEAC marzo 2026 (100 km $25.389, 500 km $77.700, 1500 km $148.417 por t)
-// interpolados cada 10 km. JULIO tiene que pegar la tabla CATAC vigente.
-function tablaEjemplo() {
-  const pts = [[10, 13617], [100, 25389], [500, 77700], [1500, 148417]];
-  const out = [];
-  for (let km = 10; km <= 1500; km += 10) {
-    let i = 0; while (i < pts.length - 2 && km > pts[i + 1][0]) i++;
-    const [k1, v1] = pts[i], [k2, v2] = pts[i + 1];
-    out.push(km + '; ' + Math.round(v1 + (v2 - v1) * (km - k1) / (k2 - k1)));
-  }
-  return out.join('\n');
-}
-const FLETE0 = {tabla: tablaEjemplo(), dolar: 1450, tierra: 0.02};
+// Tarifa de referencia CATAC de cereales y oleaginosas, 10 de abril de 2026 (pesos por t, cada 10 km).
+// Fuente: catac.org.ar/costos-y-tarifas/tarifas (PDF TARIFA-REFERENCIA-CATAC-ABRIL-26).
+const CATAC_ABRIL_2026 = '10:9637 20:12104 30:14616 40:16356 50:18224 60:19786 70:21438 80:23206 90:25113 100:27193 110:28508 120:29838 130:31195 140:32572 150:33975 160:35405 170:36864 180:38352 190:39874 200:41427 210:42874 220:44346 230:45849 240:47374 250:48928 260:50516 270:52131 280:53783 290:55473 300:57203 310:58505 320:59813 330:61125 340:62452 350:63780 360:65122 370:66470 380:67822 390:69189 400:70559 410:71522 420:72484 430:73441 440:74404 450:75361 460:76324 470:77281 480:78244 490:79201 500:80161 510:80763 520:81358 530:81946 540:82526 550:83098 560:83663 570:84223 580:84778 590:85326 600:85865 610:86400 620:86928 630:87453 640:87965 650:88478 660:88980 670:89480 680:89973 690:90460 700:90942 710:91675 720:92400 730:93122 740:93840 750:94550 760:95257 770:95960 780:96655 790:97347 800:98034 810:98567 820:99097 830:99624 840:100144 850:100662 860:101179 870:101689 880:102197 890:102702 900:103201 910:103696 920:104189 930:104679 940:105166 950:105651 960:106131 970:106609 980:107081 990:107551 1000:108021';
+function tablaCatac() { return CATAC_ABRIL_2026.split(' ').map(p => p.replace(':', '; ')).join('\n'); }
+const FLETE0 = {v: 2, tabla: tablaCatac(), ajuste: 0, dolar: 1530, tierra: 0.02};   // dólar mayorista 23/10/2026
 const guardado = (() => { try { return JSON.parse(localStorage.getItem('zonas_cfg') || 'null'); } catch(e) { return null; } })();
 let destinos = guardado?.destinos || JSON.parse(JSON.stringify(EJEMPLO));
-let flete = (guardado?.flete && guardado.flete.tabla) ? guardado.flete : {...FLETE0};
+// v2: tabla CATAC real (antes se guardaba una aproximada): si lo guardado es viejo, se reemplaza
+let flete = guardado?.flete?.v === 2 ? guardado.flete : {...FLETE0};
 let tramos = [];   // [[km hasta, pesos/t], ...] ordenado
 let datos = null;          // respuesta de /api/zonas (km por celda y por campo)
 let datosClave = '';       // posiciones con que se calculó
@@ -128,7 +128,9 @@ function tarifaPesos(km) {
   const n = tramos.length, [k2, v2] = tramos[n - 1], [k1, v1] = n > 1 ? tramos[n - 2] : [0, 0];
   return v2 + (v2 - v1) / (k2 - k1) * (tramo - k2);
 }
-function costo(km, kmTierra) { return tarifaPesos(km) / (flete.dolar || 1) + flete.tierra * kmTierra; }
+function costo(km, kmTierra) {
+  return tarifaPesos(km) * (1 + (flete.ajuste || 0) / 100) / (flete.dolar || 1) + flete.tierra * kmTierra;
+}
 function netos(kms, tierras) { return destinos.map((d, j) => d.precio - costo(kms[j], tierras[j])); }
 
 function dibujarDestinos() {
@@ -160,13 +162,19 @@ function dibujarDestinos() {
 
 function dibujarFlete() {
   $('fTabla').value = flete.tabla; $('fDolar').value = flete.dolar; $('fTierra').value = flete.tierra;
+  $('fAjuste').value = flete.ajuste || 0;
   leerTabla();
   $('ej1').textContent = fmt(costo(100, 0)); $('ej3').textContent = fmt(costo(300, 0)); $('ej5').textContent = fmt(costo(500, 0));
 }
-['fTabla','fDolar','fTierra'].forEach(id => $(id).onchange = () => {
-  flete = {tabla: $('fTabla').value, dolar: parseFloat($('fDolar').value) || 1, tierra: parseFloat($('fTierra').value) || 0};
+['fTabla','fDolar','fTierra','fAjuste'].forEach(id => $(id).onchange = () => {
+  flete = {v: 2, tabla: $('fTabla').value, ajuste: parseFloat($('fAjuste').value) || 0,
+           dolar: parseFloat($('fDolar').value) || 1, tierra: parseFloat($('fTierra').value) || 0};
   guardar(); dibujarFlete(); pintar();
 });
+document.querySelectorAll('[data-aj]').forEach(b => b.onclick = () => {
+  $('fAjuste').value = b.dataset.aj; $('fAjuste').onchange();
+});
+$('fCatac').onclick = () => { $('fTabla').value = tablaCatac(); $('fTabla').onchange(); };
 
 function estado(t, err) { $('estado').innerHTML = err ? `<span class="err">${esc(t)}</span>` : esc(t); }
 
@@ -208,7 +216,7 @@ function pintar() {
     r.bindPopup(() => '<b>Neto al productor</b><table>' + orden.map(j =>
       `<tr><td><span class="sw" style="background:${COLORES[j % COLORES.length]}"></span> ${esc(destinos[j].nombre)}</td>
        <td class="n">${fmt(kms[j], 0)} km</td><td class="n"><b>${fmt(ns[j])}</b></td></tr>`).join('') +
-      `</table><div class="sub">USD/t. Flete = tarifa del tramo ÷ dólar (+ extra en ${fmt(tierras[orden[0]],0)} km de tierra).</div>`);
+      `</table><div class="sub">USD/t. Flete = tarifa CATAC del tramo ± ajuste, ÷ dólar (+ extra en ${fmt(tierras[orden[0]],0)} km de tierra).</div>`);
   }
   const cuentaP = destinos.map(() => 0);
   for (const p of datos.puntos || []) {
