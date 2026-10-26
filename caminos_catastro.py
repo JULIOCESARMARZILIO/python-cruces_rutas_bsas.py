@@ -58,6 +58,7 @@ VECINOS = {"002": ("alberti", "Alberti"), "011": ("bolivar", "Bolívar"), "012":
            "062": ("lobos", "Lobos"), "075": ("navarro", "Navarro"), "077": ("nueve_de_julio", "Nueve de Julio"),
            "091": ("roque_perez", "Roque Pérez"), "093": ("saladillo", "Saladillo")}
 ANCHO_PRINCIPAL, ANCHO_SECUNDARIO = 30, 17
+MIN_RURALES = 30         # partidos sin campo (conurbano) se saltean
 OSM_PRINCIPAL = {"primary", "secondary", "tertiary", "trunk", "motorway",
                  "primary_link", "secondary_link", "tertiary_link"}
 RES = 5.0                # metros por pixel
@@ -134,7 +135,32 @@ def main():
     ap.add_argument("--nombre", default=NOMBRE)
     ap.add_argument("--sin-parcelas", action="store_true", help="no guardar las parcelas (solo caminos y límite)")
     ap.add_argument("--vecinos", action="store_true", help="calcular los partidos linderos de 25 de Mayo")
+    ap.add_argument("--todos", action="store_true",
+                    help="todos los partidos de la provincia que todavía no estén en datos/")
+    ap.add_argument("--indice", action="store_true",
+                    help="solo armar datos/indice_catastro.json y datos/limites_partidos.geojson")
     args = ap.parse_args()
+    if args.indice:
+        return indice()
+    if args.todos:
+        import unicodedata
+        deptos = wfs("idera:Departamento", "gna='Partido'", args.cache, "departamentos.json")
+        hechos = []
+        for f in sorted(deptos, key=lambda f: f["properties"]["cca"]):
+            cod, nombre = f["properties"]["cca"], f["properties"]["nam"]
+            slug = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode().lower()
+            slug = "_".join("".join(ch if ch.isalnum() else " " for ch in slug).split())
+            if os.path.exists(os.path.join(AQUI, "datos", f"caminos_catastro_{slug}.geojson")):
+                continue
+            cache = os.path.join(args.cache, slug) if args.cache else None
+            log(f"===== {nombre} ({cod}) =====")
+            try:
+                calcular(cod, slug, nombre, cache, sin_parcelas=True, manzanas=True)
+                hechos.append(slug)
+            except Exception as e:  # noqa  un partido que falla no corta el resto
+                log(f"ERROR en {nombre}: {e}")
+        log(f"LISTO {len(hechos)} partidos")
+        return indice()
     if args.vecinos:
         for cod, (slug, nombre) in VECINOS.items():
             cache = os.path.join(args.cache, slug) if args.cache else None
@@ -146,13 +172,55 @@ def main():
     calcular(args.partido, args.slug, args.nombre, args.cache, args.sin_parcelas)
 
 
+def indice():
+    """Índice liviano para el mapa: por partido el recuadro y los km, y los límites simplificados.
+    El mapa baja los caminos de cada partido recién cuando entra en pantalla."""
+    import glob
+    datos = os.path.join(AQUI, "datos")
+    partidos, limites = [], []
+    for p in sorted(glob.glob(os.path.join(datos, "caminos_catastro_*.geojson"))):
+        slug = os.path.basename(p)[len("caminos_catastro_"):-len(".geojson")]
+        with open(p, encoding="utf-8") as f:
+            gj = json.load(f)
+        r = gj.get("resumen") or {}
+        xs = [c[0] for ft in gj["features"] for c in ft["geometry"]["coordinates"]]
+        ys = [c[1] for ft in gj["features"] for c in ft["geometry"]["coordinates"]]
+        if not xs:
+            continue
+        partidos.append({"slug": slug, "nombre": r.get("partido") or slug, "codigo": r.get("codigo_arba"),
+                         "km": r.get("km_caminos"), "km_por_categoria": r.get("km_por_categoria"),
+                         "tramos": r.get("tramos"),
+                         "bbox": [round(min(xs), 4), round(min(ys), 4), round(max(xs), 4), round(max(ys), 4)]})
+        lp = os.path.join(datos, f"limite_arba_{slug}.geojson")
+        if os.path.exists(lp):
+            with open(lp, encoding="utf-8") as f:
+                g = shape(json.load(f)["features"][0]["geometry"]).simplify(0.003)
+            geom = json.loads(json.dumps(mapping(g)))
+
+            def red(o):
+                return [red(x) for x in o] if isinstance(o, (list, tuple)) else round(o, 4)
+            geom["coordinates"] = red(geom["coordinates"])
+            limites.append({"type": "Feature", "properties": {"slug": slug, "nombre": partidos[-1]["nombre"],
+                                                              "km": partidos[-1]["km"]}, "geometry": geom})
+    tot = {"partidos": len(partidos), "km_caminos": round(sum(p["km"] or 0 for p in partidos), 1),
+           "km_por_categoria": {k: round(sum((p["km_por_categoria"] or {}).get(k, 0) for p in partidos), 1)
+                                for k in ("principal", "secundario", "vecinal")}}
+    with open(os.path.join(datos, "indice_catastro.json"), "w", encoding="utf-8") as f:
+        json.dump({"total": tot, "partidos": partidos}, f, ensure_ascii=False, indent=0)
+    with open(os.path.join(datos, "limites_partidos.geojson"), "w", encoding="utf-8") as f:
+        json.dump({"type": "FeatureCollection", "features": limites}, f, ensure_ascii=False, separators=(",", ":"))
+    log("INDICE " + json.dumps(tot, ensure_ascii=False))
+
+
 def categoria(ancho, osm_principal):
     if osm_principal or ancho >= ANCHO_PRINCIPAL:
         return "principal"
     return "secundario" if ancho >= ANCHO_SECUNDARIO else "vecinal"
 
 
-def calcular(PARTIDO, SLUG, NOMBRE, cache, sin_parcelas=False):
+def calcular(PARTIDO, SLUG, NOMBRE, cache, sin_parcelas=False, manzanas=False):
+    """manzanas=True: la zona urbana se arma con manzanas, quintas y chacras de ARBA en vez de
+    con las parcelas urbanas (son ~10 veces menos para bajar; en el conurbano son cientos de miles)."""
 
     import rasterio.features
     from rasterio.transform import from_origin
@@ -163,7 +231,15 @@ def calcular(PARTIDO, SLUG, NOMBRE, cache, sin_parcelas=False):
     log("Bajando de ARBA límite y parcelas…")
     depto = wfs("idera:Departamento", f"cca='{PARTIDO}'", cache, "depto.json")
     rurales = wfs("idera:Parcela", f"pda LIKE '{PARTIDO}%' AND tpa='Rural'", cache, "rurales.json")
-    urbanas = wfs("idera:Parcela", f"pda LIKE '{PARTIDO}%' AND tpa<>'Rural'", cache, "urbanas.json")
+    if manzanas:
+        urbanas = []
+        for capa in ("Manzana", "Quinta", "Chacra"):
+            urbanas += wfs(f"idera:{capa}", f"cca LIKE '{PARTIDO}%'", cache, f"{capa.lower()}.json")
+    else:
+        urbanas = wfs("idera:Parcela", f"pda LIKE '{PARTIDO}%' AND tpa<>'Rural'", cache, "urbanas.json")
+    if len(rurales) < MIN_RURALES:
+        log(f"{NOMBRE}: solo {len(rurales)} parcelas rurales, se saltea")
+        return None
     limite = unary_union([shape(f["geometry"]) for f in depto])
     log(f"{len(rurales)} parcelas rurales, {len(urbanas)} urbanas")
 

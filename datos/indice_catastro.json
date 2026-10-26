@@ -1,0 +1,985 @@
+{
+"total": {
+"partidos": 54,
+"km_caminos": 55886.1,
+"km_por_categoria": {
+"principal": 13490.2,
+"secundario": 25798.8,
+"vecinal": 16596.5
+}
+},
+"partidos": [
+{
+"slug": "25_de_mayo",
+"nombre": "25 de Mayo",
+"codigo": "109",
+"km": 2220.0,
+"km_por_categoria": {
+"principal": 639.4,
+"secundario": 853.9,
+"vecinal": 726.7
+},
+"tramos": 2054,
+"bbox": [
+-60.8568,
+-35.9679,
+-59.5281,
+-35.1132
+]
+},
+{
+"slug": "adolfo_alsina",
+"nombre": "Adolfo Alsina",
+"codigo": "001",
+"km": 2754.4,
+"km_por_categoria": {
+"principal": 289.0,
+"secundario": 1591.4,
+"vecinal": 874.1
+},
+"tramos": 1720,
+"bbox": [
+-63.3856,
+-37.8009,
+-62.4524,
+-36.5566
+]
+},
+{
+"slug": "adolfo_gonzales_chaves",
+"nombre": "Adolfo Gonzales Chaves",
+"codigo": "051",
+"km": 1099.1,
+"km_por_categoria": {
+"principal": 208.3,
+"secundario": 629.1,
+"vecinal": 261.8
+},
+"tramos": 489,
+"bbox": [
+-60.7782,
+-38.2555,
+-59.6473,
+-37.6333
+]
+},
+{
+"slug": "alberti",
+"nombre": "Alberti",
+"codigo": "002",
+"km": 719.9,
+"km_por_categoria": {
+"principal": 128.5,
+"secundario": 214.9,
+"vecinal": 376.5
+},
+"tramos": 657,
+"bbox": [
+-60.4809,
+-35.2885,
+-60.0397,
+-34.7943
+]
+},
+{
+"slug": "almirante_brown",
+"nombre": "Almirante Brown",
+"codigo": "003",
+"km": 51.9,
+"km_por_categoria": {
+"principal": 0.9,
+"secundario": 20.7,
+"vecinal": 30.2
+},
+"tramos": 130,
+"bbox": [
+-58.4304,
+-34.8872,
+-58.2959,
+-34.8137
+]
+},
+{
+"slug": "arrecifes",
+"nombre": "Arrecifes",
+"codigo": "010",
+"km": 752.2,
+"km_por_categoria": {
+"principal": 156.6,
+"secundario": 299.4,
+"vecinal": 296.2
+},
+"tramos": 632,
+"bbox": [
+-60.2362,
+-34.2647,
+-59.8044,
+-33.7725
+]
+},
+{
+"slug": "avellaneda",
+"nombre": "Avellaneda",
+"codigo": "004",
+"km": 7.6,
+"km_por_categoria": {
+"principal": 2.5,
+"secundario": 2.6,
+"vecinal": 2.5
+},
+"tramos": 14,
+"bbox": [
+-58.3279,
+-34.6764,
+-58.3056,
+-34.6603
+]
+},
+{
+"slug": "ayacucho",
+"nombre": "Ayacucho",
+"codigo": "005",
+"km": 1834.4,
+"km_por_categoria": {
+"principal": 925.8,
+"secundario": 718.2,
+"vecinal": 190.4
+},
+"tramos": 989,
+"bbox": [
+-59.0735,
+-37.4767,
+-57.811,
+-36.4605
+]
+},
+{
+"slug": "azul",
+"nombre": "Azul",
+"codigo": "006",
+"km": 2053.8,
+"km_por_categoria": {
+"principal": 745.6,
+"secundario": 724.5,
+"vecinal": 583.7
+},
+"tramos": 1265,
+"bbox": [
+-60.1924,
+-37.4291,
+-59.1663,
+-36.2352
+]
+},
+{
+"slug": "bahia_blanca",
+"nombre": "Bahía Blanca",
+"codigo": "007",
+"km": 656.8,
+"km_por_categoria": {
+"principal": 193.5,
+"secundario": 285.1,
+"vecinal": 178.2
+},
+"tramos": 454,
+"bbox": [
+-62.6045,
+-38.8014,
+-61.7439,
+-38.383
+]
+},
+{
+"slug": "balcarce",
+"nombre": "Balcarce",
+"codigo": "008",
+"km": 1661.2,
+"km_por_categoria": {
+"principal": 446.6,
+"secundario": 746.7,
+"vecinal": 467.9
+},
+"tramos": 1296,
+"bbox": [
+-58.7734,
+-38.119,
+-57.7737,
+-37.4082
+]
+},
+{
+"slug": "baradero",
+"nombre": "Baradero",
+"codigo": "009",
+"km": 730.3,
+"km_por_categoria": {
+"principal": 135.1,
+"secundario": 285.0,
+"vecinal": 310.1
+},
+"tramos": 707,
+"bbox": [
+-59.7464,
+-34.1668,
+-59.3231,
+-33.7802
+]
+},
+{
+"slug": "bolivar",
+"nombre": "Bolívar",
+"codigo": "011",
+"km": 2741.7,
+"km_por_categoria": {
+"principal": 543.9,
+"secundario": 1477.2,
+"vecinal": 720.6
+},
+"tramos": 2532,
+"bbox": [
+-61.7083,
+-36.7269,
+-60.5574,
+-35.8727
+]
+},
+{
+"slug": "bragado",
+"nombre": "Bragado",
+"codigo": "012",
+"km": 1334.3,
+"km_por_categoria": {
+"principal": 205.0,
+"secundario": 555.6,
+"vecinal": 573.7
+},
+"tramos": 1231,
+"bbox": [
+-60.8615,
+-35.3837,
+-60.3201,
+-34.658
+]
+},
+{
+"slug": "brandsen",
+"nombre": "Brandsen",
+"codigo": "013",
+"km": 704.2,
+"km_por_categoria": {
+"principal": 170.3,
+"secundario": 276.6,
+"vecinal": 257.2
+},
+"tramos": 684,
+"bbox": [
+-58.4269,
+-35.4025,
+-57.9066,
+-34.9862
+]
+},
+{
+"slug": "campana",
+"nombre": "Campana",
+"codigo": "014",
+"km": 166.7,
+"km_por_categoria": {
+"principal": 41.0,
+"secundario": 74.8,
+"vecinal": 50.9
+},
+"tramos": 209,
+"bbox": [
+-59.0911,
+-34.3602,
+-58.8869,
+-34.1465
+]
+},
+{
+"slug": "canuelas",
+"nombre": "Cañuelas",
+"codigo": "015",
+"km": 542.3,
+"km_por_categoria": {
+"principal": 199.6,
+"secundario": 185.5,
+"vecinal": 157.3
+},
+"tramos": 449,
+"bbox": [
+-58.9074,
+-35.4104,
+-58.4716,
+-34.9054
+]
+},
+{
+"slug": "carlos_casares",
+"nombre": "Carlos Casares",
+"codigo": "016",
+"km": 1390.1,
+"km_por_categoria": {
+"principal": 144.2,
+"secundario": 663.0,
+"vecinal": 582.8
+},
+"tramos": 1208,
+"bbox": [
+-61.7141,
+-36.0627,
+-61.0585,
+-35.4062
+]
+},
+{
+"slug": "carlos_tejedor",
+"nombre": "Carlos Tejedor",
+"codigo": "017",
+"km": 1285.1,
+"km_por_categoria": {
+"principal": 248.1,
+"secundario": 655.3,
+"vecinal": 381.7
+},
+"tramos": 681,
+"bbox": [
+-62.8831,
+-35.7714,
+-61.9233,
+-35.0171
+]
+},
+{
+"slug": "carmen_de_areco",
+"nombre": "Carmen de Areco",
+"codigo": "018",
+"km": 409.6,
+"km_por_categoria": {
+"principal": 157.7,
+"secundario": 125.2,
+"vecinal": 126.7
+},
+"tramos": 267,
+"bbox": [
+-60.1282,
+-34.6178,
+-59.6836,
+-34.2237
+]
+},
+{
+"slug": "castelli",
+"nombre": "Castelli",
+"codigo": "020",
+"km": 366.8,
+"km_por_categoria": {
+"principal": 153.1,
+"secundario": 145.8,
+"vecinal": 67.9
+},
+"tramos": 232,
+"bbox": [
+-58.0668,
+-36.2586,
+-57.3726,
+-35.7463
+]
+},
+{
+"slug": "chacabuco",
+"nombre": "Chacabuco",
+"codigo": "026",
+"km": 1219.1,
+"km_por_categoria": {
+"principal": 227.0,
+"secundario": 372.0,
+"vecinal": 620.2
+},
+"tramos": 1021,
+"bbox": [
+-60.7551,
+-34.8471,
+-59.9117,
+-34.4132
+]
+},
+{
+"slug": "chascomus",
+"nombre": "Chascomús",
+"codigo": "027",
+"km": 925.5,
+"km_por_categoria": {
+"principal": 310.9,
+"secundario": 372.1,
+"vecinal": 242.5
+},
+"tramos": 629,
+"bbox": [
+-58.4323,
+-35.845,
+-57.3659,
+-35.3459
+]
+},
+{
+"slug": "chivilcoy",
+"nombre": "Chivilcoy",
+"codigo": "028",
+"km": 1606.4,
+"km_por_categoria": {
+"principal": 247.0,
+"secundario": 580.5,
+"vecinal": 778.8
+},
+"tramos": 1995,
+"bbox": [
+-60.2819,
+-35.1625,
+-59.6106,
+-34.6476
+]
+},
+{
+"slug": "colon",
+"nombre": "Colón",
+"codigo": "021",
+"km": 460.3,
+"km_por_categoria": {
+"principal": 194.4,
+"secundario": 188.5,
+"vecinal": 77.4
+},
+"tramos": 295,
+"bbox": [
+-61.3267,
+-34.1066,
+-60.8233,
+-33.5985
+]
+},
+{
+"slug": "coronel_dorrego",
+"nombre": "Coronel Dorrego",
+"codigo": "022",
+"km": 2150.5,
+"km_por_categoria": {
+"principal": 302.3,
+"secundario": 1083.5,
+"vecinal": 764.6
+},
+"tramos": 1058,
+"bbox": [
+-61.7271,
+-38.9562,
+-60.5261,
+-38.297
+]
+},
+{
+"slug": "coronel_pringles",
+"nombre": "Coronel Pringles",
+"codigo": "023",
+"km": 1660.8,
+"km_por_categoria": {
+"principal": 412.5,
+"secundario": 910.8,
+"vecinal": 337.4
+},
+"tramos": 786,
+"bbox": [
+-61.7865,
+-38.641,
+-60.701,
+-37.7044
+]
+},
+{
+"slug": "coronel_suarez",
+"nombre": "Coronel Suárez",
+"codigo": "024",
+"km": 2183.6,
+"km_por_categoria": {
+"principal": 508.0,
+"secundario": 971.9,
+"vecinal": 703.7
+},
+"tramos": 1355,
+"bbox": [
+-62.4184,
+-38.1512,
+-61.4968,
+-36.9228
+]
+},
+{
+"slug": "daireaux",
+"nombre": "Daireaux",
+"codigo": "019",
+"km": 1365.2,
+"km_por_categoria": {
+"principal": 282.6,
+"secundario": 729.2,
+"vecinal": 353.4
+},
+"tramos": 849,
+"bbox": [
+-62.4594,
+-36.9941,
+-61.294,
+-36.2617
+]
+},
+{
+"slug": "dolores",
+"nombre": "Dolores",
+"codigo": "029",
+"km": 463.8,
+"km_por_categoria": {
+"principal": 167.5,
+"secundario": 193.1,
+"vecinal": 103.2
+},
+"tramos": 343,
+"bbox": [
+-57.9528,
+-36.6667,
+-57.3673,
+-36.1127
+]
+},
+{
+"slug": "esteban_echeverria",
+"nombre": "Esteban Echeverría",
+"codigo": "030",
+"km": 20.8,
+"km_por_categoria": {
+"principal": 0.4,
+"secundario": 8.5,
+"vecinal": 11.9
+},
+"tramos": 42,
+"bbox": [
+-58.5204,
+-34.901,
+-58.4284,
+-34.7458
+]
+},
+{
+"slug": "exaltacion_de_la_cruz",
+"nombre": "Exaltación de la Cruz",
+"codigo": "031",
+"km": 496.8,
+"km_por_categoria": {
+"principal": 117.1,
+"secundario": 178.4,
+"vecinal": 201.3
+},
+"tramos": 673,
+"bbox": [
+-59.3568,
+-34.4596,
+-58.9226,
+-34.1668
+]
+},
+{
+"slug": "florencio_varela",
+"nombre": "Florencio Varela",
+"codigo": "032",
+"km": 117.9,
+"km_por_categoria": {
+"principal": 11.3,
+"secundario": 57.4,
+"vecinal": 49.2
+},
+"tramos": 251,
+"bbox": [
+-58.3172,
+-35.0005,
+-58.1988,
+-34.8141
+]
+},
+{
+"slug": "general_alvarado",
+"nombre": "General Alvarado",
+"codigo": "033",
+"km": 686.5,
+"km_por_categoria": {
+"principal": 193.5,
+"secundario": 332.8,
+"vecinal": 160.2
+},
+"tramos": 535,
+"bbox": [
+-58.3306,
+-38.4229,
+-57.7876,
+-37.9911
+]
+},
+{
+"slug": "general_alvear",
+"nombre": "General Alvear",
+"codigo": "034",
+"km": 1367.6,
+"km_por_categoria": {
+"principal": 363.1,
+"secundario": 841.9,
+"vecinal": 162.6
+},
+"tramos": 1569,
+"bbox": [
+-60.6811,
+-36.2925,
+-59.5165,
+-35.7801
+]
+},
+{
+"slug": "general_arenales",
+"nombre": "General Arenales",
+"codigo": "035",
+"km": 736.2,
+"km_por_categoria": {
+"principal": 115.9,
+"secundario": 298.7,
+"vecinal": 321.5
+},
+"tramos": 560,
+"bbox": [
+-61.6387,
+-34.4278,
+-60.928,
+-34.0389
+]
+},
+{
+"slug": "general_belgrano",
+"nombre": "General Belgrano",
+"codigo": "036",
+"km": 503.4,
+"km_por_categoria": {
+"principal": 202.5,
+"secundario": 184.4,
+"vecinal": 116.4
+},
+"tramos": 307,
+"bbox": [
+-59.1397,
+-36.0943,
+-58.3142,
+-35.5954
+]
+},
+{
+"slug": "general_guido",
+"nombre": "General Guido",
+"codigo": "037",
+"km": 557.4,
+"km_por_categoria": {
+"principal": 219.5,
+"secundario": 183.1,
+"vecinal": 154.9
+},
+"tramos": 282,
+"bbox": [
+-58.2645,
+-37.0446,
+-57.7765,
+-36.304
+]
+},
+{
+"slug": "general_la_madrid",
+"nombre": "General La Madrid",
+"codigo": "040",
+"km": 1416.3,
+"km_por_categoria": {
+"principal": 321.8,
+"secundario": 684.2,
+"vecinal": 410.4
+},
+"tramos": 700,
+"bbox": [
+-61.74,
+-37.9335,
+-60.9149,
+-36.8793
+]
+},
+{
+"slug": "general_las_heras",
+"nombre": "General Las Heras",
+"codigo": "041",
+"km": 464.4,
+"km_por_categoria": {
+"principal": 77.6,
+"secundario": 220.7,
+"vecinal": 166.1
+},
+"tramos": 399,
+"bbox": [
+-59.2187,
+-35.095,
+-58.7845,
+-34.7226
+]
+},
+{
+"slug": "general_lavalle",
+"nombre": "General Lavalle",
+"codigo": "042",
+"km": 322.5,
+"km_por_categoria": {
+"principal": 139.8,
+"secundario": 128.1,
+"vecinal": 54.5
+},
+"tramos": 186,
+"bbox": [
+-57.2567,
+-37.0086,
+-56.6994,
+-36.333
+]
+},
+{
+"slug": "general_madariaga",
+"nombre": "General Madariaga",
+"codigo": "039",
+"km": 687.6,
+"km_por_categoria": {
+"principal": 305.4,
+"secundario": 295.1,
+"vecinal": 87.0
+},
+"tramos": 390,
+"bbox": [
+-57.6231,
+-37.499,
+-56.869,
+-36.8054
+]
+},
+{
+"slug": "general_paz",
+"nombre": "General Paz",
+"codigo": "043",
+"km": 562.6,
+"km_por_categoria": {
+"principal": 153.3,
+"secundario": 231.4,
+"vecinal": 177.8
+},
+"tramos": 449,
+"bbox": [
+-58.5699,
+-35.7221,
+-58.1651,
+-35.2224
+]
+},
+{
+"slug": "general_pinto",
+"nombre": "General Pinto",
+"codigo": "044",
+"km": 821.2,
+"km_por_categoria": {
+"principal": 273.9,
+"secundario": 399.7,
+"vecinal": 147.7
+},
+"tramos": 380,
+"bbox": [
+-62.3338,
+-34.9508,
+-61.7136,
+-34.3858
+]
+},
+{
+"slug": "general_pueyrredon",
+"nombre": "General Pueyrredón",
+"codigo": "045",
+"km": 692.2,
+"km_por_categoria": {
+"principal": 99.2,
+"secundario": 361.7,
+"vecinal": 231.3
+},
+"tramos": 798,
+"bbox": [
+-58.0258,
+-38.2268,
+-57.5425,
+-37.7184
+]
+},
+{
+"slug": "general_rodriguez",
+"nombre": "General Rodríguez",
+"codigo": "046",
+"km": 151.3,
+"km_por_categoria": {
+"principal": 29.0,
+"secundario": 60.1,
+"vecinal": 62.2
+},
+"tramos": 186,
+"bbox": [
+-59.109,
+-34.7582,
+-58.887,
+-34.5275
+]
+},
+{
+"slug": "general_viamonte",
+"nombre": "General Viamonte",
+"codigo": "049",
+"km": 1089.2,
+"km_por_categoria": {
+"principal": 324.9,
+"secundario": 342.6,
+"vecinal": 421.7
+},
+"tramos": 928,
+"bbox": [
+-61.4063,
+-35.25,
+-60.7445,
+-34.6969
+]
+},
+{
+"slug": "general_villegas",
+"nombre": "General Villegas",
+"codigo": "050",
+"km": 2271.5,
+"km_por_categoria": {
+"principal": 690.1,
+"secundario": 1335.7,
+"vecinal": 245.7
+},
+"tramos": 1016,
+"bbox": [
+-63.3858,
+-35.3077,
+-62.2752,
+-34.3858
+]
+},
+{
+"slug": "lobos",
+"nombre": "Lobos",
+"codigo": "062",
+"km": 1164.7,
+"km_por_categoria": {
+"principal": 175.8,
+"secundario": 593.9,
+"vecinal": 395.0
+},
+"tramos": 1762,
+"bbox": [
+-59.536,
+-35.4248,
+-58.8122,
+-34.969
+]
+},
+{
+"slug": "navarro",
+"nombre": "Navarro",
+"codigo": "075",
+"km": 894.6,
+"km_por_categoria": {
+"principal": 203.0,
+"secundario": 364.0,
+"vecinal": 327.6
+},
+"tramos": 811,
+"bbox": [
+-59.7768,
+-35.2223,
+-59.0869,
+-34.8172
+]
+},
+{
+"slug": "nueve_de_julio",
+"nombre": "Nueve de Julio",
+"codigo": "077",
+"km": 2646.6,
+"km_por_categoria": {
+"principal": 499.1,
+"secundario": 1372.6,
+"vecinal": 774.8
+},
+"tramos": 2908,
+"bbox": [
+-61.5157,
+-35.9204,
+-60.4576,
+-35.1688
+]
+},
+{
+"slug": "roque_perez",
+"nombre": "Roque Pérez",
+"codigo": "091",
+"km": 760.5,
+"km_por_categoria": {
+"principal": 195.3,
+"secundario": 380.4,
+"vecinal": 184.8
+},
+"tramos": 672,
+"bbox": [
+-59.7889,
+-35.747,
+-59.0111,
+-35.3005
+]
+},
+{
+"slug": "saladillo",
+"nombre": "Saladillo",
+"codigo": "093",
+"km": 1556.4,
+"km_por_categoria": {
+"principal": 328.0,
+"secundario": 845.7,
+"vecinal": 382.7
+},
+"tramos": 1937,
+"bbox": [
+-60.1871,
+-35.9072,
+-59.2686,
+-35.4605
+]
+},
+{
+"slug": "zarate",
+"nombre": "Zárate",
+"codigo": "038",
+"km": 380.3,
+"km_por_categoria": {
+"principal": 63.8,
+"secundario": 165.6,
+"vecinal": 150.9
+},
+"tramos": 564,
+"bbox": [
+-59.3445,
+-34.199,
+-58.9771,
+-33.934
+]
+}
+]
+}

@@ -32,7 +32,8 @@ for H in mapa.html mapa_25_de_mayo.html marcar.html campos_25_de_mayo.html dista
 done
 # catastro ARBA de 25 de Mayo y partidos vecinos (generado con caminos_catastro.py, viene en datos/)
 D="$(dirname "$0")/datos"; [ -d "$D" ] || D=/app/datos
-for G in "$D"/caminos_catastro_*.geojson "$D"/parcelas_arba_*.geojson "$D"/limite_arba_*.geojson; do
+for G in "$D"/caminos_catastro_*.geojson "$D"/parcelas_arba_*.geojson "$D"/limite_arba_*.geojson \
+         "$D"/indice_catastro.json "$D"/limites_partidos.geojson; do
   if [ -f "$G" ]; then cp "$G" "$DIR_SALIDA/"; fi
 done
 # archivo de campos cargados por el usuario (no pisar si ya existe)
