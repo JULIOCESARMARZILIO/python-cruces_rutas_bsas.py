@@ -141,13 +141,19 @@ def main():
                     help="solo armar datos/indice_catastro.json y datos/limites_partidos.geojson")
     args = ap.parse_args()
     if args.indice:
+        recortar()
         return indice()
     if args.todos:
         import unicodedata
         deptos = wfs("idera:Departamento", "gna='Partido'", args.cache, "departamentos.json")
         hechos = []
+        zona = zona_excluida()
         for f in sorted(deptos, key=lambda f: f["properties"]["cca"]):
             cod, nombre = f["properties"]["cca"], f["properties"]["nam"]
+            if cod == PARTIDO:
+                continue   # 25 de Mayo ya está, con parcelas y comparado con OSM
+            if zona is not None and shape(f["geometry"]).buffer(0).difference(zona).area < 1e-4:
+                continue   # todo el partido queda adentro de la Ruta 6 o entre la Ruta 2 y la costa
             slug = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode().lower()
             slug = "_".join("".join(ch if ch.isalnum() else " " for ch in slug).split())
             if os.path.exists(os.path.join(AQUI, "datos", f"caminos_catastro_{slug}.geojson")):
@@ -160,6 +166,7 @@ def main():
             except Exception as e:  # noqa  un partido que falla no corta el resto
                 log(f"ERROR en {nombre}: {e}")
         log(f"LISTO {len(hechos)} partidos")
+        recortar()
         return indice()
     if args.vecinos:
         for cod, (slug, nombre) in VECINOS.items():
@@ -170,6 +177,55 @@ def main():
             calcular(cod, slug, nombre, cache, sin_parcelas=True)
         return
     calcular(args.partido, args.slug, args.nombre, args.cache, args.sin_parcelas)
+
+
+def zona_excluida():
+    """Zona que JULIO pidió dejar afuera: adentro del anillo de la Ruta 6 (conurbano) y de la
+    Ruta 2 hacia la costa atlántica. datos/zona_excluida.geojson se armó con las rutas de
+    red_rutas.json (RP 6 y RP 2) cerrando por el río y el mar."""
+    p = os.path.join(AQUI, "datos", "zona_excluida.geojson")
+    if not os.path.exists(p):
+        return None
+    with open(p, encoding="utf-8") as f:
+        return unary_union([shape(ft["geometry"]).buffer(0) for ft in json.load(f)["features"]])
+
+
+def recortar():
+    """Saca de datos/caminos_catastro_*.geojson los tramos que caen en la zona excluida y
+    borra los partidos que quedan vacíos."""
+    import glob
+    from shapely.prepared import prep
+    zona = zona_excluida()
+    if zona is None:
+        return
+    z = prep(zona)
+    datos = os.path.join(AQUI, "datos")
+    for p in sorted(glob.glob(os.path.join(datos, "caminos_catastro_*.geojson"))):
+        with open(p, encoding="utf-8") as f:
+            gj = json.load(f)
+        feats = [ft for ft in gj["features"]
+                 if not z.contains(shape(ft["geometry"]).interpolate(0.5, normalized=True))]
+        if len(feats) == len(gj["features"]):
+            continue
+        slug = os.path.basename(p)[len("caminos_catastro_"):-len(".geojson")]
+        if not feats:
+            os.remove(p)
+            lp = os.path.join(datos, f"limite_arba_{slug}.geojson")
+            if os.path.exists(lp):
+                os.remove(lp)
+            log(f"recorte: {slug} queda entero en la zona excluida, se saca")
+            continue
+        r = gj.get("resumen") or {}
+        r["km_caminos"] = round(sum(ft["properties"]["km"] for ft in feats), 1)
+        r["tramos"] = len(feats)
+        r["km_por_categoria"] = {k: round(sum(ft["properties"]["km"] for ft in feats
+                                              if ft["properties"].get("categoria") == k), 1)
+                                 for k in ("principal", "secundario", "vecinal")}
+        r["recortado"] = "sin la zona adentro de la Ruta 6 ni de la Ruta 2 a la costa"
+        gj["features"], gj["resumen"] = feats, r
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(gj, f, ensure_ascii=False, separators=(",", ":"))
+        log(f"recorte: {slug} queda con {r['km_caminos']} km")
 
 
 def indice():
