@@ -18,6 +18,8 @@ Salida:
 Variables:
   ORIGEN_PUERTOS="nombre;lat;lon"   (default "25 de Mayo;-35.432415;-60.171624")
   OSRM_URL                          (default https://router.project-osrm.org)
+Columna "via" del CSV ("nombre;lat;lon"): paso obligado cuando el camino más corto no
+se puede usar (p.ej. a Ramallo no se entra por la RP 51, hay que pasar por Sánchez).
 """
 
 import csv
@@ -49,6 +51,16 @@ def distancias_osrm(lat_o, lon_o, puertos):
         raise RuntimeError(d.get("code"))
     return [(m / 1000 if m is not None else None, s / 3600 if s is not None else None)
             for m, s in zip(d["distances"][0][1:], d["durations"][0][1:])]
+
+
+def ruta_osrm_via(lat_o, lon_o, via, p):
+    """km y horas pasando por un punto obligado."""
+    _, la_v, lo_v = via.split(";")
+    r = requests.get(f"{OSRM}/route/v1/driving/{lon_o},{lat_o};{lo_v},{la_v};{p['lon']},{p['lat']}",
+                     params={"overview": "false"}, timeout=120)
+    r.raise_for_status()
+    ruta = r.json()["routes"][0]
+    return ruta["distance"] / 1000, ruta["duration"] / 3600
 
 
 # ------------------------------------------------- respaldo: red RN/RP propia
@@ -139,6 +151,8 @@ def main():
 
     try:
         osrm = distancias_osrm(lat_o, lon_o, puertos)
+        osrm = [ruta_osrm_via(lat_o, lon_o, p["via"], p) if p.get("via") else d
+                for p, d in zip(puertos, osrm)]
         fuente = "OSRM (OpenStreetMap)"
     except Exception as e:  # noqa
         log(f"OSRM no disponible ({e}); se usa la red RN/RP propia")
@@ -155,6 +169,9 @@ def main():
         p["google_maps"] = f"https://www.google.com/maps?q={la},{lo}"
         p["como_llegar"] = (f"https://www.google.com/maps/dir/?api=1&origin={lat_o},{lon_o}"
                             f"&destination={la},{lo}&travelmode=driving")
+        if p.get("via"):
+            _, la_v, lo_v = p["via"].split(";")
+            p["como_llegar"] += f"&waypoints={la_v},{lo_v}"
         if KEY:
             p.update(verificar_google(p))
         log(f"  {p['terminal']}: {p['km_por_ruta'] or '-'} km por ruta, "
@@ -162,7 +179,7 @@ def main():
 
     campos = ["id", "terminal", "empresa", "localidad", "provincia", "zona", "tipo", "lat", "lon",
               "origen", "km_por_ruta", "horas_camion", "km_linea_recta", "distancia_fuente",
-              "google_maps", "como_llegar", "nombre_google", "direccion_google", "dist_google_m",
+              "via", "google_maps", "como_llegar", "nombre_google", "direccion_google", "dist_google_m",
               "google_place", "fuente"]
     os.makedirs(DIR_SALIDA, exist_ok=True)
     with open(os.path.join(DIR_SALIDA, "puertos_granos.csv"), "w", newline="", encoding="utf-8") as f:
