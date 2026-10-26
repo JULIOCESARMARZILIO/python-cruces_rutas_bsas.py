@@ -107,7 +107,7 @@ const capaCeldas = L.layerGroup().addTo(mapa);
 const capaCampos = L.layerGroup().addTo(mapa);
 const capaPuntos = L.layerGroup().addTo(mapa);
 L.control.layers(null, {'Zona pintada (cuadrados ~5 km)': capaCeldas,
-  'Puntos sobre caminos principales (cada 10 km)': capaPuntos, 'Campos cargados': capaCampos},
+  'Puntos cada 10 km (caminos principales; rutas en SF, Cba y LP)': capaPuntos, 'Campos cargados': capaCampos},
   {position:'topright', collapsed:false}).addTo(mapa);
 const capaDest = L.layerGroup().addTo(mapa);
 const $ = id => document.getElementById(id);
@@ -180,7 +180,7 @@ async function calcular() {
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'error');
     datos = j; datosClave = claveDest();
-    estado(`Listo: ${(j.puntos || []).length} puntos sobre caminos principales, ${j.celdas.length} cuadrados de ~${Math.round(j.celda * 100)} km y ${j.campos.length} campos.`);
+    estado(`Listo: ${(j.puntos || []).length} puntos (caminos principales de Buenos Aires y rutas de Santa Fe, Córdoba y La Pampa), ${j.celdas.length} cuadrados de ~${Math.round(j.celda * 100)} km y ${j.campos.length} campos.`);
     pintar();
     if (!window._encuadrado && j.puntos && j.puntos.length) {
       window._encuadrado = true;
@@ -217,7 +217,7 @@ function pintar() {
     cuentaP[orden[0]]++;
     L.circleMarker([p.lat, p.lon], {radius:5, color:'#fff', weight:1, fillColor:COLORES[orden[0] % COLORES.length], fillOpacity:1})
       .addTo(capaPuntos)
-      .bindPopup(() => `<b>Camino principal</b> · ${esc(p.nombre)}<table>` + orden.map(j =>
+      .bindPopup(() => `<b>${p.nombre.endsWith('(ruta)') ? 'Ruta' : 'Camino principal'}</b> · ${esc(p.nombre)}<table>` + orden.map(j =>
         `<tr><td><span class="sw" style="background:${COLORES[j % COLORES.length]}"></span> ${esc(destinos[j].nombre)}</td>
          <td class="n">${fmt(p.km[j], 0)} km</td><td class="n">${fmt(costo(p.km[j], p.km_tierra[j]))} flete</td>
          <td class="n"><b>${fmt(ns[j])}</b></td></tr>`).join('') + '</table><div class="sub">USD/t: neto = precio − flete.</div>');
