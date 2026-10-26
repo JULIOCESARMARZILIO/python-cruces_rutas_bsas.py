@@ -642,5 +642,13 @@ def _puntos_principales():
                                 "lat": round(la1 + (la2 - la1) * t, 5), "lon": round(lo1 + (lo2 - lo1) * t, 5)})
                     resto = PASO_PUNTOS_KM
                 resto -= seg - pos
+    # Santa Fe, Córdoba y La Pampa no tienen catastro rural cargado: un punto cada ~10 km sobre
+    # las rutas RN/RP (datos/puntos_rutas_provincias.geojson, provincia según georef)
+    gj = _cargar_json(os.path.join(DIR_SALIDA, "puntos_rutas_provincias.geojson"))
+    for f in (gj or {}).get("features", []):
+        pr = f.get("properties") or {}
+        lon, lat = f["geometry"]["coordinates"]
+        out.append({"nombre": f"{pr.get('departamento', '')}, {pr.get('provincia', '')} (ruta)",
+                    "lat": lat, "lon": lon})
     _PUNTOS = (_FIRMA, out)
     return out

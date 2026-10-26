@@ -207,7 +207,8 @@ def _puntos_deseados():
     out = {}
     for pt in ruteo._puntos_principales():
         clave = f"c:{pt['lat']:.5f},{pt['lon']:.5f}"
-        out[clave] = ("camino_principal", pt["nombre"], pt["lat"], pt["lon"])
+        tipo = "ruta_provincia" if pt["nombre"].endswith("(ruta)") else "camino_principal"
+        out[clave] = (tipo, pt["nombre"], pt["lat"], pt["lon"])
     p = os.path.join(DIR_SALIDA, "cruces_buenos_aires.csv")
     if os.path.exists(p):
         zona = _zona_excluida()
