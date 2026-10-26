@@ -126,6 +126,13 @@ def ubicar(campos, arba):
         if len(v) == 1 and reclamos[v[0]] == 1:
             c["partidas"] = v
             c["ubicado"] = "automatico"
+    # campos sin hectáreas legibles en el plano: toman la superficie de sus parcelas ARBA
+    for c in campos:
+        if c["ha"] is None and c["partidas"]:
+            ha = sum(arba[p]["ha"] for p in c["partidas"] if p in arba)
+            if ha:
+                c["ha"] = r1(ha)
+                c["ha_fuente"] = "arba"
 
 
 def stats(valores):
@@ -171,7 +178,7 @@ def main():
     props = sorted(prop.values(), key=lambda p: -p["ha"])
 
     cols = ["id", "zona", "cuartel", "propietario", "tipo_titular", "tipo", "hectareas",
-            "confianza", "nota", "partidas", "ha_arba", "ubicado"]
+            "confianza", "nota", "partidas", "ha_arba", "ha_fuente", "ubicado"]
     feats = []
     with open(os.path.join(DIR_SALIDA, f"campos_{SLUG}.csv"), "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
