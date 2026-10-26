@@ -36,6 +36,11 @@ SIN_NOMBRE = {"tierra": "camino de tierra s/n", "calle": "calle s/n",
               "pavimento": "camino pavimentado s/n", "marcado": "camino marcado"}
 # velocidades para estimar el tiempo de un camión (km/h)
 VEL = {"tierra": 35.0, "pavimento": 70.0, "marcado": 30.0, "calle": 30.0}
+# Los camiones salen de los campos por los caminos principales: al buscar el camino más corto
+# cada km de camino secundario o vecinal "pesa" más (la distancia que se informa es la real).
+# Categoría del catastro según el ancho de la franja (caminos_catastro.py); los caminos de
+# tierra del OSM no traen categoría.
+PESO = {"principal": 1.0, "secundario": 1.5, "vecinal": 3.0, "tierra_osm": 1.3}
 
 
 def hav_km(lon1, lat1, lon2, lat2):
@@ -79,7 +84,7 @@ class Red:
     def __init__(self):
         self.lonlat = []     # i -> (lon, lat)
         self.idx = {}        # (lon6, lat6) -> i
-        self.ady = []        # i -> [(j, km, tipo, nombre)]
+        self.ady = []        # i -> [(j, km, tipo, nombre, peso)]
         self.grilla = {}     # (cx, cy) -> [i]
         self.fuentes = {}
 
@@ -93,21 +98,21 @@ class Red:
             self.ady.append([])
         return i
 
-    def arista(self, a, b, tipo, nombre, km=None):
+    def arista(self, a, b, tipo, nombre, km=None, peso=1.0):
         if a == b:
             return
         if km is None:
             (lo1, la1), (lo2, la2) = self.lonlat[a], self.lonlat[b]
             km = hav_km(lo1, la1, lo2, la2)
-        self.ady[a].append((b, km, tipo, nombre))
-        self.ady[b].append((a, km, tipo, nombre))
+        self.ady[a].append((b, km, tipo, nombre, peso))
+        self.ady[b].append((a, km, tipo, nombre, peso))
 
-    def linea(self, coords, tipo, nombre):
+    def linea(self, coords, tipo, nombre, peso=1.0):
         prev = None
         for lon, lat in coords:
             i = self.nodo(lon, lat)
             if prev is not None:
-                self.arista(prev, i, tipo, nombre)
+                self.arista(prev, i, tipo, nombre, peso=peso)
             prev = i
 
     def componentes(self):
@@ -202,8 +207,8 @@ class Red:
             if u == t:
                 break
             cerrados.add(u)
-            for v, km, tipo, nombre in self.ady[u]:
-                nd = d + km
+            for v, km, tipo, nombre, peso in self.ady[u]:
+                nd = d + km * peso
                 if nd < dist.get(v, float("inf")):
                     dist[v] = nd
                     prev[v] = (u, km, tipo, nombre)
@@ -217,7 +222,7 @@ class Red:
             tramos.append((u, x, km, tipo, nombre))
             x = u
         tramos.reverse()
-        return dist[t], tramos
+        return sum(tr[2] for tr in tramos), tramos
 
 
 def _archivos():
@@ -239,7 +244,7 @@ def _firma():
 
 def construir():
     red = Red()
-    sueltos = []   # (coords, tipo, nombre, km de enganche): no comparten nodos con el OSM
+    sueltos = []   # (coords, tipo, nombre, km de enganche, peso): no comparten nodos con el OSM
     for p in _archivos():
         base = os.path.basename(p)
         if base == "red_rutas.json":
@@ -255,19 +260,22 @@ def construir():
                 continue
             if base == "caminos_usuario.geojson":
                 sueltos.append((g["coordinates"], "marcado", pr.get("nombre") or "Camino marcado",
-                                ENGANCHE_MARCADO_KM))
+                                ENGANCHE_MARCADO_KM, 1.0))
                 n += 1
                 continue
             if "highway" not in pr:   # catastro ARBA (caminos_catastro.py): solo los que no están en OSM
                 if pr.get("en_osm") in ("no", "sin_dato"):   # sin_dato: partido vecino sin OSM bajado
                     cu = f" (cuartel {pr['cuartel']})" if pr.get("cuartel") else ""
-                    sueltos.append((g["coordinates"], "tierra", "camino de catastro" + cu, ENGANCHE_CATASTRO_KM))
+                    cat = pr.get("categoria") or "secundario"
+                    sueltos.append((g["coordinates"], "tierra", f"camino {cat} de catastro" + cu,
+                                    ENGANCHE_CATASTRO_KM, PESO.get(cat, 1.0)))
                     n += 1
                 continue
             if pr.get("highway") in NO_TRANSITABLE:
                 continue
             nombre = ref_ruta(pr.get("ref")) or pr.get("nombre") or pr.get("ref") or ""
-            red.linea(g["coordinates"], tipo_via(pr), nombre)
+            tv = tipo_via(pr)
+            red.linea(g["coordinates"], tv, nombre, PESO["tierra_osm"] if tv == "tierra" else 1.0)
             n += 1
         red.fuentes[base] = n
     rr = _cargar_json(os.path.join(DIR_SALIDA, "red_rutas.json"))
@@ -285,21 +293,21 @@ def construir():
     red.fuentes["empalmes_cosidos"] = red.coser()
     red.indexar()
     # caminos del catastro y marcados a mano: se agregan y sus extremos se enganchan a la red
-    for coords, tipo, nombre, max_km in sueltos:
+    for coords, tipo, nombre, max_km, peso in sueltos:
         if len(coords) < 2:
             continue
         nuevos_antes = len(red.lonlat)
         extremos = []
         for c in (coords[0], coords[-1]):
             extremos.append(red.cercano(c[0], c[1], max_km)[0])
-        red.linea(coords, tipo, nombre)
+        red.linea(coords, tipo, nombre, peso)
         propios = set(range(nuevos_antes, len(red.lonlat)))
         for j in propios:   # que el próximo camino suelto pueda engancharse a este
             lo, la = red.lonlat[j]
             red.grilla.setdefault((int(math.floor(lo / CELDA)), int(math.floor(la / CELDA))), []).append(j)
         for c, i in zip((coords[0], coords[-1]), extremos):
             if i is not None and i not in propios:
-                red.arista(red.idx[(round(c[0], 6), round(c[1], 6))], i, tipo, nombre)
+                red.arista(red.idx[(round(c[0], 6), round(c[1], 6))], i, tipo, nombre, peso=peso)
     red.indexar()
     return red
 
@@ -479,3 +487,160 @@ if __name__ == "__main__":
         for p in r.get("piernas", []):
             p["coords"] = f"{len(p['coords'])} puntos"
         print(json.dumps(r, ensure_ascii=False, indent=1))
+
+
+# ------------------------------------------------------------- zonas de competencia
+# Para comparar destinos (puertos, plantas, acopios) se corre un Dijkstra desde cada destino
+# a toda la red: así se sabe a cuántos km por camino queda cualquier punto de cada destino.
+# Se guarda en memoria por destino (no depende de precios ni fletes, eso lo hace la página).
+CELDA_ZONA = 0.05      # grilla del mapa de zonas (~5 km)
+_DIJ = {}              # (firma, lon6, lat6) -> (km[], km_tierra[], enganche_km)
+_DIJ_LOCK = threading.Lock()
+
+
+def _dijkstra(red, s):
+    from array import array
+    inf = float("inf")
+    km = array("d", [inf]) * len(red.lonlat)
+    tierra = array("d", [0.0]) * len(red.lonlat)
+    costo = array("d", [inf]) * len(red.lonlat)   # km ponderados por categoría de camino
+    km[s] = costo[s] = 0.0
+    heap = [(0.0, s)]
+    ady = red.ady
+    while heap:
+        d, u = heapq.heappop(heap)
+        if d > costo[u]:
+            continue
+        ku, tu = km[u], tierra[u]
+        for v, k, tipo, _, peso in ady[u]:
+            nd = d + k * peso
+            if nd < costo[v]:
+                costo[v] = nd
+                km[v] = ku + k
+                tierra[v] = tu + (k if tipo in ("tierra", "marcado") else 0.0)
+                heapq.heappush(heap, (nd, v))
+    return km, tierra
+
+
+def _desde(red, lat, lon):
+    """Distancias por camino desde un destino a todos los nodos (con caché)."""
+    clave = (_FIRMA, round(lon, 6), round(lat, 6))
+    with _DIJ_LOCK:
+        if clave in _DIJ:
+            return _DIJ[clave]
+    s, eng = red.cercano(lon, lat)
+    if s is None:
+        return None
+    km, tierra = _dijkstra(red, s)
+    with _DIJ_LOCK:
+        for k in [k for k in _DIJ if k[0] != _FIRMA]:   # la red cambió: tirar lo viejo
+            del _DIJ[k]
+        _DIJ[clave] = (km, tierra, eng)
+    return _DIJ[clave]
+
+
+def _puntos(archivos):
+    out = []
+    for archivo in archivos:
+        gj = _cargar_json(os.path.join(DIR_SALIDA, archivo))
+        for f in (gj or {}).get("features", []):
+            c = _centroide(f.get("geometry") or {})
+            if c:
+                pr = f.get("properties") or {}
+                out.append({"nombre": _nombre(pr) or "Campo", "lat": round(c[1], 6), "lon": round(c[0], 6),
+                            "ha": pr.get("hectareas") or pr.get("ha")})
+    return out
+
+
+def zonas(destinos, celda=CELDA_ZONA):
+    """destinos: [{"lat", "lon"}, ...]. Devuelve, para cada celda de la grilla con caminos y para
+    cada campo cargado, los km por camino (y cuántos de tierra) a cada destino. Los precios y el
+    flete los aplica la página, así se pueden cambiar sin recalcular."""
+    red = red_actual()
+    if not red.grilla:
+        return {"ok": False, "error": "todavía no hay red de caminos calculada en el servidor"}
+    tablas = []
+    for d in destinos:
+        t = _desde(red, d["lat"], d["lon"])
+        if t is None:
+            return {"ok": False, "error": f"el destino {d.get('nombre') or ''} queda a más de "
+                                          f"{MAX_ENGANCHE_KM:.0f} km de cualquier camino cargado"}
+        tablas.append(t)
+    n = len(tablas)
+    # celdas: para cada celda, el nodo de la red principal más cercano al centro de la celda
+    mejor = {}   # (cx, cy) -> (dist2, i)
+    for (gx, gy), nodos in red.grilla.items():
+        cx, cy = int(math.floor(gx * CELDA / celda)), int(math.floor(gy * CELDA / celda))
+        mx, my = (cx + 0.5) * celda, (cy + 0.5) * celda
+        for i in nodos:
+            lo, la = red.lonlat[i]
+            d2 = (lo - mx) ** 2 + (la - my) ** 2
+            if (cx, cy) not in mejor or d2 < mejor[(cx, cy)][0]:
+                mejor[(cx, cy)] = (d2, i)
+    # solo la zona con caminos rurales cargados (la red de rutas llega a 6 provincias)
+    pts = _puntos_principales()
+    if pts:
+        lat0, lat1 = min(p["lat"] for p in pts) - 0.3, max(p["lat"] for p in pts) + 0.3
+        lon0, lon1 = min(p["lon"] for p in pts) - 0.3, max(p["lon"] for p in pts) + 0.3
+    else:
+        lat0, lat1, lon0, lon1 = -90, 90, -180, 180
+    celdas = []
+    for (cx, cy), (_, i) in mejor.items():
+        if not (lat0 <= (cy + 0.5) * celda <= lat1 and lon0 <= (cx + 0.5) * celda <= lon1):
+            continue
+        kms = [t[0][i] + t[2] for t in tablas]
+        if any(k == float("inf") for k in kms):
+            continue
+        celdas.append([round((cy + 0.5) * celda, 4), round((cx + 0.5) * celda, 4),
+                       [round(k, 1) for k in kms], [round(t[1][i], 1) for t in tablas]])
+    def medir(puntos):
+        out = []
+        for c in puntos:
+            i, eng = red.cercano(c["lon"], c["lat"])
+            if i is None:
+                continue
+            kms = [t[0][i] + t[2] + eng for t in tablas]
+            if any(k == float("inf") for k in kms):
+                continue
+            c["km"] = [round(k, 1) for k in kms]
+            c["km_tierra"] = [round(t[1][i] + eng, 1) for t in tablas]
+            out.append(c)
+        return out
+    campos = medir(_puntos(["campos.geojson", "campos_25_de_mayo.geojson"]))
+    puntos = medir([dict(p) for p in _puntos_principales()])
+    return {"ok": True, "celda": celda, "n": n, "enganche_km": [round(t[2], 2) for t in tablas],
+            "celdas": celdas, "campos": campos, "puntos": puntos}
+
+
+PASO_PUNTOS_KM = 10.0
+_PUNTOS = (None, [])
+
+
+def _puntos_principales():
+    """Un punto cada 10 km sobre los caminos de tierra principales del catastro (franja de 30 m
+    o más): son las salidas de los campos que JULIO quiere comparar."""
+    global _PUNTOS
+    if _PUNTOS[0] == _FIRMA:
+        return _PUNTOS[1]
+    out = []
+    for p in sorted(glob.glob(os.path.join(DIR_SALIDA, "caminos_catastro_*.geojson"))):
+        gj = _cargar_json(p)
+        resto = PASO_PUNTOS_KM / 2   # km que faltan para el próximo punto (se arrastra entre tramos)
+        for f in (gj or {}).get("features", []):
+            pr = f.get("properties") or {}
+            g = f.get("geometry") or {}
+            if pr.get("categoria") != "principal" or g.get("type") != "LineString":
+                continue
+            c = g["coordinates"]
+            for (lo1, la1), (lo2, la2) in zip(c, c[1:]):
+                seg = hav_km(lo1, la1, lo2, la2)
+                pos = 0.0
+                while seg - pos >= resto:
+                    pos += resto
+                    t = pos / seg
+                    out.append({"nombre": f"{pr.get('partido', '')}" + (f" (cuartel {pr['cuartel']})" if pr.get("cuartel") else ""),
+                                "lat": round(la1 + (la2 - la1) * t, 5), "lon": round(lo1 + (lo2 - lo1) * t, 5)})
+                    resto = PASO_PUNTOS_KM
+                resto -= seg - pos
+    _PUNTOS = (_FIRMA, out)
+    return out

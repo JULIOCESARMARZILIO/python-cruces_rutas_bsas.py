@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Zonas de cada destino</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; color:#111; }
+  #mapa { position: absolute; inset: 0; }
+  #hoja { position:absolute; left:10px; top:10px; z-index:1000; width:min(440px, calc(100% - 20px));
+    background:rgba(255,255,255,.97); border-radius:12px; box-shadow:0 2px 14px rgba(0,0,0,.3);
+    padding:12px 14px; max-height:calc(100% - 20px); overflow:auto; font-size:14px; }
+  h3 { margin:4px 0 6px; font-size:15px; }
+  table { border-collapse:collapse; width:100%; }
+  td, th { padding:3px 4px; border-bottom:1px solid #eee; text-align:left; font-size:13px; }
+  th { color:#555; font-weight:600; }
+  td.n, th.n { text-align:right; font-variant-numeric: tabular-nums; }
+  input[type=number] { width:64px; font-size:14px; padding:4px; border:1px solid #bbb; border-radius:6px; }
+  input[type=text] { width:100%; font-size:14px; padding:4px; border:1px solid #bbb; border-radius:6px; }
+  .sw { display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:middle; }
+  button { font-size:14px; padding:7px 10px; border-radius:8px; border:1px solid #bbb; background:#fff; cursor:pointer; }
+  button.prim { background:#b02a00; border-color:#b02a00; color:#fff; }
+  button.x { padding:1px 7px; font-size:12px; }
+  .botones { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+  .sub { color:#666; font-size:12px; }
+  .err { color:#a00; }
+  .flete label { display:flex; justify-content:space-between; align-items:center; padding:2px 0; }
+  .pin { color:#fff; border:2px solid #fff; border-radius:50%; width:28px; height:28px; display:flex;
+    align-items:center; justify-content:center; font-weight:700; font-size:12px; box-shadow:0 1px 5px rgba(0,0,0,.5); }
+  #min { position:absolute; top:6px; right:8px; padding:2px 8px; }
+  #hoja.chica > *:not(#min):not(h3) { display:none !important; }
+  details summary { cursor:pointer; color:#1664c0; margin-top:6px; }
+</style>
+</head>
+<body>
+<div id="mapa"></div>
+<div id="hoja">
+  <button id="min" title="Achicar">▾</button>
+  <h3>Zona de cada puerto / planta</h3>
+  <div class="sub">Cada lugar del mapa se pinta del destino que le deja más plata al productor:
+    precio del destino menos el flete por camino. Arrastrá los destinos o agregá plantas nuevas tocando el mapa.</div>
+  <table id="tdest"></table>
+  <div class="botones">
+    <button id="agregar">＋ Agregar destino</button>
+    <button id="calcular" class="prim">Calcular zonas</button>
+    <button id="reset">Volver a los de ejemplo</button>
+  </div>
+  <div class="flete">
+    <b>Flete: tarifa por tramos de 10 km</b>
+    <div class="sub">Pegá la tabla CATAC: una línea por tramo, «km hasta; pesos por tonelada».
+      Cada viaje se redondea al tramo de 10 km de arriba. La que viene cargada es aproximada
+      (FADEEAC marzo 2026 interpolada): reemplazala por la vigente.</div>
+    <textarea id="fTabla" rows="5" style="width:100%;font-family:monospace;font-size:12px"></textarea>
+    <label>Dólar (pesos por USD) <input type="number" id="fDolar" step="10"></label>
+    <label>Extra por km de tierra (USD/t) <input type="number" id="fTierra" step="0.005"></label>
+    <div class="sub">Con esto: 100 km = <span id="ej1"></span> USD/t · 300 km = <span id="ej3"></span> USD/t ·
+      500 km = <span id="ej5"></span> USD/t.</div>
+  </div>
+  <div id="estado" class="sub" style="margin-top:6px"></div>
+  <div id="resumen"></div>
+  <details id="detCampos"><summary>Campos cargados: mejor destino</summary>
+    <div class="botones"><button id="csv">⬇ Bajar CSV</button></div>
+    <table id="tcampos"></table>
+  </details>
+  <div class="sub" style="margin-top:8px">Distancias por la red propia (rutas OSM + caminos del catastro).
+    <a href="distancia.html">Medir un recorrido</a> · <a href="index.html">Inicio</a></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const COLORES = ['#1664c0','#c62828','#2e7d32','#6b3fa0','#e08a00','#00838f','#ad1457','#5d4037','#455a64','#9e9d24'];
+const EJEMPLO = [
+  {nombre:'Rosario', precio:400, lat:-32.98361, lon:-60.61904},
+  {nombre:'Bahía Blanca', precio:390, lat:-38.78900, lon:-62.26780},
+  {nombre:'Quequén', precio:385, lat:-38.57282, lon:-58.70684},
+  {nombre:'Trenque Lauquen', precio:370, lat:-35.9706, lon:-62.7316},
+  {nombre:'Saladillo', precio:375, lat:-35.6400, lon:-59.7790},
+];
+// Tarifa aproximada: puntos FADEEAC marzo 2026 (100 km $25.389, 500 km $77.700, 1500 km $148.417 por t)
+// interpolados cada 10 km. JULIO tiene que pegar la tabla CATAC vigente.
+function tablaEjemplo() {
+  const pts = [[10, 13617], [100, 25389], [500, 77700], [1500, 148417]];
+  const out = [];
+  for (let km = 10; km <= 1500; km += 10) {
+    let i = 0; while (i < pts.length - 2 && km > pts[i + 1][0]) i++;
+    const [k1, v1] = pts[i], [k2, v2] = pts[i + 1];
+    out.push(km + '; ' + Math.round(v1 + (v2 - v1) * (km - k1) / (k2 - k1)));
+  }
+  return out.join('\n');
+}
+const FLETE0 = {tabla: tablaEjemplo(), dolar: 1450, tierra: 0.02};
+const guardado = (() => { try { return JSON.parse(localStorage.getItem('zonas_cfg') || 'null'); } catch(e) { return null; } })();
+let destinos = guardado?.destinos || JSON.parse(JSON.stringify(EJEMPLO));
+let flete = (guardado?.flete && guardado.flete.tabla) ? guardado.flete : {...FLETE0};
+let tramos = [];   // [[km hasta, pesos/t], ...] ordenado
+let datos = null;          // respuesta de /api/zonas (km por celda y por campo)
+let datosClave = '';       // posiciones con que se calculó
+let agregando = false;
+
+const mapa = L.map('mapa', {preferCanvas:true}).setView([-36.3, -60.5], 7);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {maxZoom:18, attribution:'© OpenStreetMap'}).addTo(mapa);
+const capaCeldas = L.layerGroup().addTo(mapa);
+const capaCampos = L.layerGroup().addTo(mapa);
+const capaPuntos = L.layerGroup().addTo(mapa);
+L.control.layers(null, {'Zona pintada (cuadrados ~5 km)': capaCeldas,
+  'Puntos sobre caminos principales (cada 10 km)': capaPuntos, 'Campos cargados': capaCampos},
+  {position:'topright', collapsed:false}).addTo(mapa);
+const capaDest = L.layerGroup().addTo(mapa);
+const $ = id => document.getElementById(id);
+const fmt = (x, d=1) => x.toLocaleString('es-AR', {minimumFractionDigits:d, maximumFractionDigits:d});
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function guardar() { try { localStorage.setItem('zonas_cfg', JSON.stringify({destinos, flete})); } catch(e) {} }
+function claveDest() { return destinos.map(d => d.lat.toFixed(5) + ',' + d.lon.toFixed(5)).join(';'); }
+function leerTabla() {
+  tramos = flete.tabla.split(/\n/).map(l => l.replace(/\./g, '').replace(',', '.').split(/[;\t]|\s+/).filter(Boolean))
+    .map(p => [parseFloat(p[0]), parseFloat(p[1])]).filter(p => p[0] > 0 && p[1] > 0).sort((a, b) => a[0] - b[0]);
+}
+function tarifaPesos(km) {
+  if (!tramos.length) return 0;
+  const tramo = Math.max(10, Math.ceil(km / 10) * 10);
+  for (const [hasta, pesos] of tramos) if (tramo <= hasta) return pesos;
+  // más lejos que la tabla: seguir con la pendiente de los dos últimos tramos
+  const n = tramos.length, [k2, v2] = tramos[n - 1], [k1, v1] = n > 1 ? tramos[n - 2] : [0, 0];
+  return v2 + (v2 - v1) / (k2 - k1) * (tramo - k2);
+}
+function costo(km, kmTierra) { return tarifaPesos(km) / (flete.dolar || 1) + flete.tierra * kmTierra; }
+function netos(kms, tierras) { return destinos.map((d, j) => d.precio - costo(kms[j], tierras[j])); }
+
+function dibujarDestinos() {
+  capaDest.clearLayers();
+  destinos.forEach((d, j) => {
+    const icon = L.divIcon({className:'', iconSize:[28,28], iconAnchor:[14,14],
+      html:`<div class="pin" style="background:${COLORES[j % COLORES.length]}">${j+1}</div>`});
+    const m = L.marker([d.lat, d.lon], {icon, draggable:true}).addTo(capaDest)
+      .bindTooltip(`${esc(d.nombre)} · ${d.precio} USD/t`);
+    m.on('dragend', () => { const p = m.getLatLng(); d.lat = p.lat; d.lon = p.lng;
+      guardar(); estado('Moviste un destino: tocá «Calcular zonas».'); });
+  });
+  const t = $('tdest');
+  t.innerHTML = '<tr><th></th><th>Destino</th><th class="n">Precio USD/t</th><th></th></tr>' +
+    destinos.map((d, j) => `<tr><td><span class="sw" style="background:${COLORES[j % COLORES.length]}"></span></td>
+      <td><input type="text" data-j="${j}" data-k="nombre" value="${esc(d.nombre)}"></td>
+      <td class="n"><input type="number" step="1" data-j="${j}" data-k="precio" value="${d.precio}"></td>
+      <td><button class="x" data-borrar="${j}" title="Sacar">✕</button></td></tr>`).join('');
+  t.querySelectorAll('input').forEach(inp => inp.onchange = () => {
+    const d = destinos[+inp.dataset.j];
+    d[inp.dataset.k] = inp.dataset.k === 'precio' ? (parseFloat(inp.value) || 0) : inp.value;
+    guardar(); dibujarDestinos(); pintar();
+  });
+  t.querySelectorAll('[data-borrar]').forEach(b => b.onclick = () => {
+    destinos.splice(+b.dataset.borrar, 1); guardar(); dibujarDestinos();
+    if (datos) estado('Sacaste un destino: tocá «Calcular zonas».');
+  });
+}
+
+function dibujarFlete() {
+  $('fTabla').value = flete.tabla; $('fDolar').value = flete.dolar; $('fTierra').value = flete.tierra;
+  leerTabla();
+  $('ej1').textContent = fmt(costo(100, 0)); $('ej3').textContent = fmt(costo(300, 0)); $('ej5').textContent = fmt(costo(500, 0));
+}
+['fTabla','fDolar','fTierra'].forEach(id => $(id).onchange = () => {
+  flete = {tabla: $('fTabla').value, dolar: parseFloat($('fDolar').value) || 1, tierra: parseFloat($('fTierra').value) || 0};
+  guardar(); dibujarFlete(); pintar();
+});
+
+function estado(t, err) { $('estado').innerHTML = err ? `<span class="err">${esc(t)}</span>` : esc(t); }
+
+async function calcular() {
+  if (!destinos.length) return estado('Agregá al menos un destino.', true);
+  estado('Calculando distancias por camino desde cada destino… (la primera vez puede tardar un minuto)');
+  $('calcular').disabled = true;
+  try {
+    const r = await fetch('api/zonas', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({destinos: destinos.map(d => ({lat:d.lat, lon:d.lon, nombre:d.nombre}))})});
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'error');
+    datos = j; datosClave = claveDest();
+    estado(`Listo: ${(j.puntos || []).length} puntos sobre caminos principales, ${j.celdas.length} cuadrados de ~${Math.round(j.celda * 100)} km y ${j.campos.length} campos.`);
+    pintar();
+    if (!window._encuadrado && j.puntos && j.puntos.length) {
+      window._encuadrado = true;
+      const ancho = innerWidth > 700 ? $('hoja').offsetWidth + 20 : 0;
+      mapa.fitBounds(L.latLngBounds(j.puntos.map(p => [p.lat, p.lon])), {paddingTopLeft:[ancho, 10]});
+    }
+  } catch (e) { estado('No se pudo calcular: ' + e.message, true); }
+  $('calcular').disabled = false;
+}
+
+function pintar() {
+  capaCeldas.clearLayers(); capaCampos.clearLayers(); capaPuntos.clearLayers();
+  if (!datos || datosClave !== claveDest()) { $('resumen').innerHTML = ''; return; }
+  const h = datos.celda / 2;
+  const cuenta = destinos.map(() => 0);
+  for (const [lat, lon, kms, tierras] of datos.celdas) {
+    const ns = netos(kms, tierras);
+    const orden = ns.map((n, j) => j).sort((a, b) => ns[b] - ns[a]);
+    const g = orden[0], margen = ns.length > 1 ? ns[g] - ns[orden[1]] : 99;
+    cuenta[g]++;
+    // más transparente cuanto más pareja está la competencia con el segundo
+    const op = 0.18 + 0.42 * Math.min(1, margen / 15);
+    const r = L.rectangle([[lat - h, lon - h], [lat + h, lon + h]],
+      {stroke:false, fillColor:COLORES[g % COLORES.length], fillOpacity:op}).addTo(capaCeldas);
+    r.bindPopup(() => '<b>Neto al productor</b><table>' + orden.map(j =>
+      `<tr><td><span class="sw" style="background:${COLORES[j % COLORES.length]}"></span> ${esc(destinos[j].nombre)}</td>
+       <td class="n">${fmt(kms[j], 0)} km</td><td class="n"><b>${fmt(ns[j])}</b></td></tr>`).join('') +
+      `</table><div class="sub">USD/t. Flete = tarifa del tramo ÷ dólar (+ extra en ${fmt(tierras[orden[0]],0)} km de tierra).</div>`);
+  }
+  const cuentaP = destinos.map(() => 0);
+  for (const p of datos.puntos || []) {
+    const ns = netos(p.km, p.km_tierra);
+    const orden = ns.map((n, j) => j).sort((a, b) => ns[b] - ns[a]);
+    cuentaP[orden[0]]++;
+    L.circleMarker([p.lat, p.lon], {radius:5, color:'#fff', weight:1, fillColor:COLORES[orden[0] % COLORES.length], fillOpacity:1})
+      .addTo(capaPuntos)
+      .bindPopup(() => `<b>Camino principal</b> · ${esc(p.nombre)}<table>` + orden.map(j =>
+        `<tr><td><span class="sw" style="background:${COLORES[j % COLORES.length]}"></span> ${esc(destinos[j].nombre)}</td>
+         <td class="n">${fmt(p.km[j], 0)} km</td><td class="n">${fmt(costo(p.km[j], p.km_tierra[j]))} flete</td>
+         <td class="n"><b>${fmt(ns[j])}</b></td></tr>`).join('') + '</table><div class="sub">USD/t: neto = precio − flete.</div>');
+  }
+  const tot = datos.celdas.length || 1, totP = (datos.puntos || []).length || 1;
+  $('resumen').innerHTML = '<h3 style="margin-top:10px">Superficie que gana cada uno</h3><table><tr><th>Destino</th><th class="n">Puntos</th><th class="n">Superficie</th><th class="n"></th></tr>' +
+    destinos.map((d, j) => [j, cuenta[j]]).sort((a, b) => b[1] - a[1]).map(([j, c]) =>
+      `<tr><td><span class="sw" style="background:${COLORES[j % COLORES.length]}"></span> ${esc(destinos[j].nombre)}</td>
+       <td class="n">${cuentaP[j]} (${fmt(100 * cuentaP[j] / totP, 0)} %)</td><td class="n">${fmt(100 * c / tot, 0)} %</td><td class="n">≈ ${fmt(c * Math.pow(datos.celda * 100, 2) * 0.82 / 1000, 0)} mil km²</td></tr>`).join('') +
+    '</table><div class="sub">Cuadrado más pálido = el segundo destino queda a menos de 15 USD/t.</div>';
+  // campos
+  const filas = [];
+  for (const c of datos.campos) {
+    const ns = netos(c.km, c.km_tierra);
+    let g = 0; ns.forEach((n, j) => { if (n > ns[g]) g = j; });
+    filas.push({c, ns, g});
+    L.circleMarker([c.lat, c.lon], {radius:4, color:'#000', weight:1, fillColor:COLORES[g % COLORES.length], fillOpacity:1})
+      .addTo(capaCampos)
+      .bindPopup(`<b>${esc(c.nombre)}</b>${c.ha ? ' · ' + esc(c.ha) + ' ha' : ''}<table>` +
+        ns.map((n, j) => [j, n]).sort((a, b) => b[1] - a[1]).map(([j, n]) =>
+          `<tr><td>${esc(destinos[j].nombre)}</td><td class="n">${fmt(c.km[j], 0)} km</td><td class="n"><b>${fmt(n)}</b></td></tr>`).join('') + '</table>');
+  }
+  filas.sort((a, b) => b.ns[b.g] - a.ns[a.g]);
+  window._filas = filas;
+  $('tcampos').innerHTML = '<tr><th>Campo</th><th>Mejor</th><th class="n">km</th><th class="n">Neto</th></tr>' +
+    filas.map(({c, ns, g}) => `<tr><td>${esc(c.nombre)}</td><td><span class="sw" style="background:${COLORES[g % COLORES.length]}"></span> ${esc(destinos[g].nombre)}</td>
+      <td class="n">${fmt(c.km[g], 0)}</td><td class="n">${fmt(ns[g])}</td></tr>`).join('');
+}
+
+$('csv').onclick = () => {
+  const filas = window._filas || [];
+  const cab = ['campo','ha','lat','lon','mejor_destino','neto_mejor'];
+  destinos.forEach(d => cab.push(`km_${d.nombre}`, `km_tierra_${d.nombre}`, `neto_${d.nombre}`));
+  const q = s => '"' + String(s ?? '').replace(/"/g, '""') + '"';
+  const lineas = [cab.map(q).join(',')].concat(filas.map(({c, ns, g}) => {
+    const v = [c.nombre, c.ha, c.lat, c.lon, destinos[g].nombre, ns[g].toFixed(2)];
+    destinos.forEach((d, j) => v.push(c.km[j], c.km_tierra[j], ns[j].toFixed(2)));
+    return v.map(q).join(',');
+  }));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + lineas.join('\n')], {type:'text/csv'}));
+  a.download = 'campos_mejor_destino.csv'; a.click();
+};
+
+$('agregar').onclick = () => { agregando = true; estado('Tocá el mapa donde va el nuevo destino.'); };
+mapa.on('click', e => {
+  if (!agregando) return;
+  agregando = false;
+  const nombre = prompt('Nombre del destino (planta, acopio, puerto):', 'Planta ' + (destinos.length + 1));
+  if (nombre === null) return estado('');
+  const precio = parseFloat(prompt('Precio que paga (USD/t):', '390')) || 0;
+  destinos.push({nombre, precio, lat:e.latlng.lat, lon:e.latlng.lng});
+  guardar(); dibujarDestinos(); estado('Destino agregado: tocá «Calcular zonas».');
+});
+$('calcular').onclick = calcular;
+$('reset').onclick = () => { destinos = JSON.parse(JSON.stringify(EJEMPLO)); flete = {...FLETE0};
+  guardar(); dibujarDestinos(); dibujarFlete(); pintar(); };
+$('min').onclick = () => { $('hoja').classList.toggle('chica'); $('min').textContent = $('hoja').classList.contains('chica') ? '▴' : '▾'; };
+
+dibujarDestinos(); dibujarFlete();
+calcular();
+</script>
+</body>
+</html>
