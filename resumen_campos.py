@@ -41,6 +41,8 @@ ASIGNACIONES = os.path.join(DIR_SALIDA, "asignaciones_campos.json")
 PARCELAS = os.path.join(DIR_SALIDA, "parcelas.geojson")
 SLUG = "25_de_mayo"
 TOLERANCIA = 0.02
+# I = ciudad, II = quintas y chacras del ejido: el plano rural no trae sus dueños
+CUARTELES_FUERA = {"I", "II"}
 
 RE_SOCIEDAD = re.compile(r"\b(s\.?\s?a\.?|s\.?r\.?l\.?|s\.?c\.?a\.?|s\.?a\.?s\.?|s\.?c\.?|"
                          r"sacaif|saic\w*|saca\w*|sacif\w*|cia|hnos|sociedad|y cia)\b|\bs\.a\.", re.I)
@@ -134,7 +136,7 @@ def main():
     campos = leer_tabla()
     arba_fc = leer_json(ARBA, {"features": []})
     arba = {f["properties"]["partida"]: dict(f["properties"], geometry=f["geometry"])
-            for f in arba_fc["features"]}
+            for f in arba_fc["features"] if f["properties"].get("cuartel") not in CUARTELES_FUERA}
     ubicar(campos, arba)
 
     # parcelas dibujadas a mano en el mapa que no son del plano
