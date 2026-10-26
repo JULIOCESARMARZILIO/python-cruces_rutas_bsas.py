@@ -1,11 +1,11 @@
 {
 "total": {
-"partidos": 54,
-"km_caminos": 55886.1,
+"partidos": 92,
+"km_caminos": 94169.9,
 "km_por_categoria": {
-"principal": 13490.2,
-"secundario": 25798.8,
-"vecinal": 16596.5
+"principal": 22240.6,
+"secundario": 43768.3,
+"vecinal": 28160.6
 }
 },
 "partidos": [
@@ -223,6 +223,24 @@
 -34.1668,
 -59.3231,
 -33.7802
+]
+},
+{
+"slug": "benito_juarez",
+"nombre": "Benito Juárez",
+"codigo": "053",
+"km": 1674.4,
+"km_por_categoria": {
+"principal": 521.6,
+"secundario": 771.6,
+"vecinal": 381.2
+},
+"tramos": 841,
+"bbox": [
+-60.4952,
+-37.9887,
+-59.2708,
+-37.1926
 ]
 },
 {
@@ -874,6 +892,168 @@
 ]
 },
 {
+"slug": "guamini",
+"nombre": "Guaminí",
+"codigo": "052",
+"km": 1443.3,
+"km_por_categoria": {
+"principal": 263.7,
+"secundario": 781.3,
+"vecinal": 398.3
+},
+"tramos": 686,
+"bbox": [
+-62.9057,
+-37.3481,
+-61.8812,
+-36.4763
+]
+},
+{
+"slug": "junin",
+"nombre": "Junín",
+"codigo": "054",
+"km": 1291.0,
+"km_por_categoria": {
+"principal": 288.8,
+"secundario": 462.1,
+"vecinal": 540.1
+},
+"tramos": 1090,
+"bbox": [
+-61.347,
+-34.8068,
+-60.6669,
+-34.2971
+]
+},
+{
+"slug": "la_matanza",
+"nombre": "La Matanza",
+"codigo": "070",
+"km": 84.0,
+"km_por_categoria": {
+"principal": 11.8,
+"secundario": 25.7,
+"vecinal": 46.4
+},
+"tramos": 154,
+"bbox": [
+-58.7544,
+-34.9095,
+-58.4932,
+-34.7108
+]
+},
+{
+"slug": "la_plata",
+"nombre": "La Plata",
+"codigo": "055",
+"km": 587.7,
+"km_por_categoria": {
+"principal": 97.6,
+"secundario": 243.5,
+"vecinal": 246.7
+},
+"tramos": 1004,
+"bbox": [
+-58.2658,
+-35.2148,
+-57.7737,
+-34.837
+]
+},
+{
+"slug": "laprida",
+"nombre": "Laprida",
+"codigo": "056",
+"km": 840.2,
+"km_por_categoria": {
+"principal": 206.6,
+"secundario": 442.3,
+"vecinal": 191.3
+},
+"tramos": 394,
+"bbox": [
+-61.1285,
+-37.9032,
+-60.3903,
+-37.0609
+]
+},
+{
+"slug": "las_flores",
+"nombre": "Las Flores",
+"codigo": "058",
+"km": 919.3,
+"km_por_categoria": {
+"principal": 401.5,
+"secundario": 311.2,
+"vecinal": 206.6
+},
+"tramos": 557,
+"bbox": [
+-59.6895,
+-36.3451,
+-58.7459,
+-35.7085
+]
+},
+{
+"slug": "leandro_n_alem",
+"nombre": "Leandro N. Alem",
+"codigo": "059",
+"km": 649.8,
+"km_por_categoria": {
+"principal": 178.5,
+"secundario": 345.2,
+"vecinal": 126.1
+},
+"tramos": 396,
+"bbox": [
+-61.9298,
+-34.6535,
+-61.2867,
+-34.3136
+]
+},
+{
+"slug": "lincoln",
+"nombre": "Lincoln",
+"codigo": "060",
+"km": 2127.8,
+"km_por_categoria": {
+"principal": 411.5,
+"secundario": 1098.6,
+"vecinal": 617.6
+},
+"tramos": 1239,
+"bbox": [
+-62.2561,
+-35.5647,
+-61.1541,
+-34.595
+]
+},
+{
+"slug": "loberia",
+"nombre": "Lobería",
+"codigo": "061",
+"km": 1781.9,
+"km_por_categoria": {
+"principal": 390.9,
+"secundario": 917.5,
+"vecinal": 473.6
+},
+"tramos": 1035,
+"bbox": [
+-59.1378,
+-38.5459,
+-58.2683,
+-37.5986
+]
+},
+{
 "slug": "lobos",
 "nombre": "Lobos",
 "codigo": "062",
@@ -889,6 +1069,168 @@
 -35.4248,
 -58.8122,
 -34.969
+]
+},
+{
+"slug": "lujan",
+"nombre": "Luján",
+"codigo": "064",
+"km": 417.8,
+"km_por_categoria": {
+"principal": 93.7,
+"secundario": 129.6,
+"vecinal": 194.5
+},
+"tramos": 587,
+"bbox": [
+-59.3233,
+-34.7847,
+-58.9605,
+-34.3805
+]
+},
+{
+"slug": "magdalena",
+"nombre": "Magdalena",
+"codigo": "065",
+"km": 898.7,
+"km_por_categoria": {
+"principal": 247.5,
+"secundario": 298.9,
+"vecinal": 352.3
+},
+"tramos": 623,
+"bbox": [
+-57.9771,
+-35.4333,
+-57.3179,
+-34.9429
+]
+},
+{
+"slug": "maipu",
+"nombre": "Maipú",
+"codigo": "066",
+"km": 517.0,
+"km_por_categoria": {
+"principal": 239.5,
+"secundario": 168.2,
+"vecinal": 109.4
+},
+"tramos": 239,
+"bbox": [
+-57.975,
+-37.1865,
+-57.1931,
+-36.5851
+]
+},
+{
+"slug": "mar_chiquita",
+"nombre": "Mar Chiquita",
+"codigo": "069",
+"km": 756.9,
+"km_por_categoria": {
+"principal": 272.9,
+"secundario": 371.0,
+"vecinal": 113.0
+},
+"tramos": 439,
+"bbox": [
+-58.0648,
+-37.8783,
+-57.2655,
+-37.1463
+]
+},
+{
+"slug": "marcos_paz",
+"nombre": "Marcos Paz",
+"codigo": "068",
+"km": 230.4,
+"km_por_categoria": {
+"principal": 54.9,
+"secundario": 138.2,
+"vecinal": 37.2
+},
+"tramos": 270,
+"bbox": [
+-59.0244,
+-34.9541,
+-58.7179,
+-34.698
+]
+},
+{
+"slug": "mercedes",
+"nombre": "Mercedes",
+"codigo": "071",
+"km": 606.7,
+"km_por_categoria": {
+"principal": 138.4,
+"secundario": 264.3,
+"vecinal": 204.1
+},
+"tramos": 706,
+"bbox": [
+-59.7045,
+-34.8692,
+-59.2036,
+-34.5144
+]
+},
+{
+"slug": "merlo",
+"nombre": "Merlo",
+"codigo": "072",
+"km": 38.1,
+"km_por_categoria": {
+"principal": 7.5,
+"secundario": 13.1,
+"vecinal": 17.5
+},
+"tramos": 86,
+"bbox": [
+-58.8631,
+-34.7754,
+-58.643,
+-34.6805
+]
+},
+{
+"slug": "monte",
+"nombre": "Monte",
+"codigo": "073",
+"km": 625.5,
+"km_por_categoria": {
+"principal": 152.2,
+"secundario": 298.5,
+"vecinal": 174.8
+},
+"tramos": 526,
+"bbox": [
+-59.0857,
+-35.7403,
+-58.4915,
+-35.2596
+]
+},
+{
+"slug": "moreno",
+"nombre": "Moreno",
+"codigo": "074",
+"km": 36.8,
+"km_por_categoria": {
+"principal": 2.1,
+"secundario": 9.1,
+"vecinal": 25.6
+},
+"tramos": 94,
+"bbox": [
+-58.8814,
+-34.6525,
+-58.7657,
+-34.5141
 ]
 },
 {
@@ -910,6 +1252,24 @@
 ]
 },
 {
+"slug": "necochea",
+"nombre": "Necochea",
+"codigo": "076",
+"km": 1692.7,
+"km_por_categoria": {
+"principal": 434.7,
+"secundario": 917.4,
+"vecinal": 340.6
+},
+"tramos": 911,
+"bbox": [
+-59.6615,
+-38.7095,
+-58.6485,
+-37.6218
+]
+},
+{
 "slug": "nueve_de_julio",
 "nombre": "Nueve de Julio",
 "codigo": "077",
@@ -925,6 +1285,240 @@
 -35.9204,
 -60.4576,
 -35.1688
+]
+},
+{
+"slug": "olavarria",
+"nombre": "Olavarría",
+"codigo": "078",
+"km": 1832.2,
+"km_por_categoria": {
+"principal": 485.9,
+"secundario": 949.3,
+"vecinal": 397.0
+},
+"tramos": 967,
+"bbox": [
+-61.4017,
+-37.3443,
+-60.0027,
+-36.3819
+]
+},
+{
+"slug": "patagones",
+"nombre": "Patagones",
+"codigo": "079",
+"km": 3435.7,
+"km_por_categoria": {
+"principal": 574.8,
+"secundario": 1940.5,
+"vecinal": 920.4
+},
+"tramos": 1496,
+"bbox": [
+-63.3822,
+-40.948,
+-62.167,
+-39.5033
+]
+},
+{
+"slug": "pehuajo",
+"nombre": "Pehuajó",
+"codigo": "080",
+"km": 1859.1,
+"km_por_categoria": {
+"principal": 360.6,
+"secundario": 1204.7,
+"vecinal": 293.9
+},
+"tramos": 1343,
+"bbox": [
+-62.4192,
+-36.3131,
+-61.4574,
+-35.5018
+]
+},
+{
+"slug": "pellegrini",
+"nombre": "Pellegrini",
+"codigo": "081",
+"km": 496.3,
+"km_por_categoria": {
+"principal": 52.4,
+"secundario": 245.3,
+"vecinal": 198.6
+},
+"tramos": 188,
+"bbox": [
+-63.3854,
+-36.5781,
+-62.9592,
+-35.9101
+]
+},
+{
+"slug": "pergamino",
+"nombre": "Pergamino",
+"codigo": "082",
+"km": 1940.0,
+"km_por_categoria": {
+"principal": 472.6,
+"secundario": 888.8,
+"vecinal": 578.6
+},
+"tramos": 1703,
+"bbox": [
+-60.9294,
+-34.1348,
+-60.1387,
+-33.5465
+]
+},
+{
+"slug": "pila",
+"nombre": "Pila",
+"codigo": "083",
+"km": 721.8,
+"km_por_categoria": {
+"principal": 324.2,
+"secundario": 253.7,
+"vecinal": 143.9
+},
+"tramos": 364,
+"bbox": [
+-58.8076,
+-36.6098,
+-57.9818,
+-35.8594
+]
+},
+{
+"slug": "pilar",
+"nombre": "Pilar",
+"codigo": "084",
+"km": 183.3,
+"km_por_categoria": {
+"principal": 20.4,
+"secundario": 62.6,
+"vecinal": 100.3
+},
+"tramos": 435,
+"bbox": [
+-59.0444,
+-34.5673,
+-58.7676,
+-34.3373
+]
+},
+{
+"slug": "puan",
+"nombre": "Puan",
+"codigo": "085",
+"km": 2602.7,
+"km_por_categoria": {
+"principal": 306.0,
+"secundario": 1138.1,
+"vecinal": 1158.6
+},
+"tramos": 1391,
+"bbox": [
+-63.3858,
+-38.7682,
+-62.6056,
+-37.3865
+]
+},
+{
+"slug": "quilmes",
+"nombre": "Quilmes",
+"codigo": "086",
+"km": 10.5,
+"km_por_categoria": {
+"principal": 3.0,
+"secundario": 6.4,
+"vecinal": 1.1
+},
+"tramos": 35,
+"bbox": [
+-58.3135,
+-34.7608,
+-58.1996,
+-34.685
+]
+},
+{
+"slug": "ramallo",
+"nombre": "Ramallo",
+"codigo": "087",
+"km": 608.8,
+"km_por_categoria": {
+"principal": 106.5,
+"secundario": 193.8,
+"vecinal": 308.5
+},
+"tramos": 505,
+"bbox": [
+-60.3068,
+-33.8265,
+-59.8356,
+-33.3725
+]
+},
+{
+"slug": "rauch",
+"nombre": "Rauch",
+"codigo": "088",
+"km": 1100.0,
+"km_por_categoria": {
+"principal": 463.5,
+"secundario": 447.9,
+"vecinal": 188.6
+},
+"tramos": 635,
+"bbox": [
+-59.3262,
+-37.0522,
+-58.5301,
+-36.1872
+]
+},
+{
+"slug": "rivadavia",
+"nombre": "Rivadavia",
+"codigo": "089",
+"km": 1190.4,
+"km_por_categoria": {
+"principal": 221.7,
+"secundario": 626.4,
+"vecinal": 342.3
+},
+"tramos": 528,
+"bbox": [
+-63.3858,
+-36.0013,
+-62.648,
+-35.1892
+]
+},
+{
+"slug": "rojas",
+"nombre": "Rojas",
+"codigo": "090",
+"km": 1206.4,
+"km_por_categoria": {
+"principal": 236.7,
+"secundario": 463.4,
+"vecinal": 506.2
+},
+"tramos": 956,
+"bbox": [
+-61.1136,
+-34.4982,
+-60.4761,
+-33.8904
 ]
 },
 {
@@ -946,6 +1540,24 @@
 ]
 },
 {
+"slug": "saavedra",
+"nombre": "Saavedra",
+"codigo": "092",
+"km": 1381.9,
+"km_por_categoria": {
+"principal": 160.3,
+"secundario": 575.4,
+"vecinal": 646.2
+},
+"tramos": 1025,
+"bbox": [
+-62.8753,
+-38.1129,
+-62.0463,
+-37.3807
+]
+},
+{
 "slug": "saladillo",
 "nombre": "Saladillo",
 "codigo": "093",
@@ -961,6 +1573,78 @@
 -35.9072,
 -59.2686,
 -35.4605
+]
+},
+{
+"slug": "salto",
+"nombre": "Salto",
+"codigo": "067",
+"km": 1075.1,
+"km_por_categoria": {
+"principal": 211.7,
+"secundario": 459.9,
+"vecinal": 403.6
+},
+"tramos": 985,
+"bbox": [
+-60.5767,
+-34.4871,
+-60.0075,
+-34.0084
+]
+},
+{
+"slug": "san_andres_de_giles",
+"nombre": "San Andrés de Giles",
+"codigo": "094",
+"km": 878.7,
+"km_por_categoria": {
+"principal": 190.0,
+"secundario": 321.4,
+"vecinal": 367.4
+},
+"tramos": 957,
+"bbox": [
+-59.7581,
+-34.6136,
+-59.2087,
+-34.2559
+]
+},
+{
+"slug": "san_antonio_de_areco",
+"nombre": "San Antonio de Areco",
+"codigo": "095",
+"km": 527.8,
+"km_por_categoria": {
+"principal": 143.6,
+"secundario": 176.1,
+"vecinal": 208.1
+},
+"tramos": 507,
+"bbox": [
+-59.775,
+-34.4035,
+-59.2674,
+-34.0049
+]
+},
+{
+"slug": "tigre",
+"nombre": "Tigre",
+"codigo": "057",
+"km": 13.1,
+"km_por_categoria": {
+"principal": 0.6,
+"secundario": 8.5,
+"vecinal": 3.9
+},
+"tramos": 29,
+"bbox": [
+-58.711,
+-34.521,
+-58.6145,
+-34.3544
 ]
 },
 {
