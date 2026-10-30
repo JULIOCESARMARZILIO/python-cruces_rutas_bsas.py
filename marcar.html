@@ -11,7 +11,8 @@
   * { box-sizing: border-box; }
   html, body { margin:0; height:100%; font-family: system-ui, sans-serif; }
   #mapa { position:absolute; inset:0; }
-  #panel { position:absolute; top:10px; left:10px; z-index:1000; max-width:280px;
+  /* abajo a la izquierda: arriba tapaba las herramientas de dibujo (lápiz y tacho) */
+  #panel { position:absolute; bottom:24px; left:10px; z-index:1000; max-width:280px; max-height:45vh; overflow:auto;
     background:rgba(255,255,255,.96); color:#111; padding:12px 14px; border-radius:10px;
     box-shadow:0 2px 12px rgba(0,0,0,.3); font-size:13px; }
   #panel h1 { font-size:15px; margin:0 0 6px; }
@@ -30,6 +31,7 @@
     <li>Elegí <b>Satélite</b> (arriba a la derecha).</li>
     <li>Con la herramienta de línea (izquierda) dibujá cada camino que falte; doble clic para terminarlo.</li>
     <li>Cada camino se guarda solo en el servidor. En rojo ves los de OpenStreetMap y en azul los que ya marcaste: dibujá lo que falta.</li>
+    <li>Para <b>mover puntos</b> de un camino marcado: el lápiz (izquierda), arrastrá los puntos y tocá <b>Save</b>. Con el tacho lo borrás. Se guarda en el servidor.</li>
   </ol>
   <p style="margin:6px 0 0">Para <b>parcelas</b>: usá el polígono y, al cerrarlo, cargá propietario y hectáreas (se guarda en el servidor y aparece en el mapa de 25 de Mayo).</p>
   <div id="cuenta">Marcados: 0</div>
@@ -84,6 +86,7 @@ mapa.on(L.Draw.Event.CREATED, async e => {
         body: JSON.stringify({ nombre, coords }) });
       const j = await r.json();
       if (!j.ok) throw new Error(j.error);
+      e.layer.caminoId = j.feature.properties.id;
       e.layer.bindPopup('<b>'+(nombre||'Camino')+'</b> — '+j.feature.properties.km+' km');
     }catch(err){ alert('No se pudo guardar en el servidor (queda en este navegador): '+err.message); }
   }
@@ -100,10 +103,47 @@ async function refCapa(url, estilo, nombre){
 }
 const capasRef = L.control.layers({}, {}, { position:'topright', collapsed:false }).addTo(mapa);
 refCapa('caminos_25_de_mayo.geojson', f => ({ color:'#ff7a45', weight:1.2, opacity:.9 }), 'Caminos de OSM (rojo)');
-refCapa('caminos_usuario.geojson', f => ({ color:'#3aa0ff', weight:3 }), 'Ya marcados (azul)');
+// los caminos ya marcados van a la capa editable: se les pueden mover, agregar o sacar puntos con el lápiz
+async function cargarMarcados(){
+  try{
+    const r = await fetch('caminos_usuario.geojson', { cache:'no-store' }); if (!r.ok) return;
+    L.geoJSON(await r.json(), { style:{ color:'#3aa0ff', weight:3 }, onEachFeature:(f,l)=>{
+      const p = f.properties||{};
+      l.caminoId = p.id;
+      l.bindPopup('<b>'+(p.nombre||'Camino')+'</b>'+(p.km?' — '+p.km+' km':''));
+      dibujado.addLayer(l);
+    }});
+    actualizar();
+  }catch(e){}
+}
+cargarMarcados();
 refCapa('parcelas.geojson', f => ({ color:'#f3c14b', weight:2, fillOpacity:.1 }), 'Parcelas');
-mapa.on('draw:deleted', actualizar);
-mapa.on('draw:edited', actualizar);
+async function enviar(ruta, cuerpo){
+  const r = await fetch(ruta, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(cuerpo) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || r.status);
+  return j;
+}
+mapa.on('draw:edited', async e => {
+  const errores = [];
+  for (const l of e.layers.getLayers()){
+    if (!l.caminoId || !(l instanceof L.Polyline) || l instanceof L.Polygon) continue;
+    try{
+      const j = await enviar('api/camino/editar', { id: l.caminoId, coords: l.getLatLngs().map(p => [p.lng, p.lat]) });
+      l.setPopupContent('<b>'+(j.feature.properties.nombre||'Camino')+'</b> — '+j.feature.properties.km+' km');
+    }catch(err){ errores.push(err.message); }
+  }
+  if (errores.length) alert('No se pudieron guardar algunos cambios: '+errores.join(', '));
+  actualizar();
+});
+mapa.on('draw:deleted', async e => {
+  for (const l of e.layers.getLayers()){
+    if (!l.caminoId) continue;
+    try{ await enviar('api/camino/borrar', { id: l.caminoId }); }
+    catch(err){ alert('No se pudo borrar en el servidor: '+err.message); }
+  }
+  actualizar();
+});
 
 document.getElementById('bajar').onclick = () => {
   const n = dibujado.getLayers().length;
@@ -118,17 +158,9 @@ document.getElementById('bajar').onclick = () => {
   a.click();
 };
 document.getElementById('limpiar').onclick = () => {
-  if (confirm('¿Borrar todo lo marcado?')){ dibujado.clearLayers(); actualizar(); }
+  if (confirm('¿Sacar todo de la pantalla? Lo guardado en el servidor queda (para borrar un camino usá el tacho).')){ dibujado.clearLayers(); actualizar(); }
 };
 
-// guarda un respaldo en el navegador por si se recarga
-mapa.on(L.Draw.Event.CREATED, ()=> {
-  try{ localStorage.setItem('marcados', JSON.stringify(dibujado.toGeoJSON())); }catch(e){}
-});
-try{
-  const prev = localStorage.getItem('marcados');
-  if (prev){ L.geoJSON(JSON.parse(prev)).eachLayer(l=>dibujado.addLayer(l)); actualizar(); }
-}catch(e){}
 </script>
 </body>
 </html>
