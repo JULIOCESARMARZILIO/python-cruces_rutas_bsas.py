@@ -21,7 +21,7 @@ id,terminal,empresa,localidad,provincia,zona,tipo,lat,lon,via,fuente
 20,Puerto Villa Constitución Unidad II,Puerto de Villa Constitución,Villa Constitución,Santa Fe,Up-River sur,multipropósito,-33.22188,-60.33177,,OSM Puerto de Villa Constitución - Unidad II + satélite
 21,Bunge Ramallo,Bunge Argentina S.A.,Ramallo,Buenos Aires,Paraná inferior,granos y aceites,-33.45355,-60.04395,Sánchez (Villa General Savio);-33.4350;-60.1460,OSM Bunge Ramallo + satélite
 22,Elevador de granos San Pedro,Puerto de San Pedro,San Pedro,Buenos Aires,Paraná inferior,granos,-33.68715,-59.64566,,OSM Elevador de granos de San Pedro + satélite
-23,Puerto Quequén - terminal de granos (margen Quequén),Puerto Quequén,Quequén,Buenos Aires,Quequén,granos,-38.57282,-58.70684,,satélite (complejo de silos sobre el muelle)
+23,Terminal Quequén (TQ),Terminal Quequén S.A.,Quequén,Buenos Aires,Quequén,granos,-38.57282,-58.70684,,satélite (complejo de silos sobre el muelle); SISA planta 22382 Terminal Quequén S.A. (CUIT 30656161341), elevador
 24,Sitio 0 de Quequén,Puerto Quequén,Quequén,Buenos Aires,Quequén,granos,-38.57620,-58.70040,,OSM Sitio 0 de Quequén + satélite
 25,Terminal Bahía Blanca,Terminal Bahía Blanca S.A.,Ingeniero White,Buenos Aires,Bahía Blanca,granos,-38.78900,-62.26780,,OSM Terminal Bahía Blanca SA + satélite
 26,Cargill Bahía Blanca,Cargill S.A.C.I.,Ingeniero White,Buenos Aires,Bahía Blanca,granos,-38.78640,-62.27400,,OSM Cargill SAIC + satélite
