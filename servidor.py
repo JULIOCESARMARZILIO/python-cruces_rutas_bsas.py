@@ -4,6 +4,7 @@ Servidor HTTP mínimo (stdlib) para publicar DIR_SALIDA y buscar en los CSV:
   /<archivo>             descarga directa
   /buscar?q=texto        filas de todos los CSV que contienen el texto (HTML)
   /buscar?q=texto&f=csv  lo mismo en CSV
+  /api/camino/editar (POST) {"id", "coords"?, "nombre"?} -> cambia un camino marcado en marcar.html
   /api/lugares           campos, parcelas, plantas, acopios, puertos y pueblos (JSON)
   /api/ruta  (POST)      {"puntos": [[lat, lon], ...]} -> distancia por camino (ruteo.py)
   /api/zonas (POST)      {"destinos": [{lat, lon}, ...]} -> km de cada celda y campo a cada destino
@@ -111,6 +112,28 @@ def guardar_camino(nombre, coords):
             json.dump(fc, f, ensure_ascii=False)
         os.replace(tmp, CAMINOS_USU)
         return feat
+
+
+def editar_camino(cid, coords=None, nombre=None):
+    """Cambia los puntos o el nombre de un camino marcado (marcar.html, «Editar»); recalcula los km."""
+    with _LOCK:
+        fc = _cargar(CAMINOS_USU)
+        for f in fc["features"]:
+            p = f.setdefault("properties", {})
+            if p.get("id") != cid:
+                continue
+            if coords is not None:
+                f["geometry"] = {"type": "LineString", "coordinates": coords}
+                p["km"] = round(sum(_hav_km(a[0], a[1], b[0], b[1]) for a, b in zip(coords, coords[1:])), 2)
+            if nombre is not None:
+                p["nombre"] = nombre
+            p["modificado"] = time.strftime("%Y-%m-%d %H:%M")
+            tmp = CAMINOS_USU + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(fc, fh, ensure_ascii=False)
+            os.replace(tmp, CAMINOS_USU)
+            return f
+        return None
 
 
 def borrar_camino(cid):
@@ -326,6 +349,20 @@ class Manejador(SimpleHTTPRequestHandler):
             nombre = (str(cuerpo.get("nombre") or "")).strip()[:120] or "Camino sin nombre"
             feat = guardar_camino(nombre, coords)
             return self._json({"ok": True, "feature": feat})
+        if u.path == "/api/camino/editar":
+            coords = None
+            if "coords" in cuerpo:
+                try:
+                    coords = [[float(c[0]), float(c[1])] for c in cuerpo["coords"]]
+                except Exception:  # noqa
+                    return self._json({"ok": False, "error": "coords inválidas"}, 400)
+                if len(coords) < 2:
+                    return self._json({"ok": False, "error": "mínimo 2 puntos"}, 400)
+            nombre = (str(cuerpo["nombre"] or "")).strip()[:120] or "Camino sin nombre" if "nombre" in cuerpo else None
+            feat = editar_camino(cuerpo.get("id"), coords, nombre)
+            if not feat:
+                return self._json({"ok": False, "error": "no existe ese camino"}, 404)
+            return self._json({"ok": True, "feature": feat})
         if u.path == "/api/camino/borrar":
             n = borrar_camino(cuerpo.get("id"))
             return self._json({"ok": True, "borrados": n})
@@ -370,6 +407,13 @@ class Manejador(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(datos)))
         self.end_headers()
         self.wfile.write(datos)
+
+    def end_headers(self):
+        # Lo que se guarda (campos, caminos, parcelas) y los recálculos cambian estos archivos: sin esto el navegador
+        # mostraba la versión vieja y parecía que el camino no se había guardado.
+        if urlparse(self.path).path.endswith((".geojson", ".json", ".html", ".csv")) or self.path.startswith("/api/"):
+            self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
 
     def _responder(self, cuerpo, tipo):
         datos = cuerpo.encode("utf-8")
