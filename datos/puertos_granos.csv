@@ -31,3 +31,4 @@ id,terminal,empresa,localidad,provincia,zona,tipo,lat,lon,via,fuente
 30,Puerto Ibicuy,Puerto Ibicuy,Ibicuy,Entre Ríos,Paraná inferior,multipropósito,-33.75647,-59.17841,,OSM Puerto Ibicuy + satélite
 31,Puerto Concepción del Uruguay,Puerto Concepción del Uruguay,Concepción del Uruguay,Entre Ríos,Río Uruguay,multipropósito,-32.47841,-58.22102,,OSM acceso a puerto + satélite
 32,Puerto Barranqueras,Puerto Barranqueras,Barranqueras,Chaco,Paraná medio,multipropósito,-27.49020,-58.92545,,OSM Puerto de Barranqueras + satélite
+33,ACA Quequén,Asociación de Cooperativas Argentinas,Quequén,Buenos Aires,Quequén,granos,-38.57308,-58.71106,,"satélite (elevador sobre el muelle, aguas arriba de Terminal Quequén); SISA planta 21146 ACA, elevador; según JULIO"
