@@ -19,6 +19,11 @@
     max-width: 290px; max-height: 90vh; overflow:auto; font-size: 14px;
   }
   #panel h1 { font-size: 15px; margin: 0 0 8px; }
+  #panel h1 button { all: unset; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; }
+  #panel h1 .flecha { font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 6px; background: #0001; }
+  #panel.cerrado { padding: 8px 12px; }
+  #panel.cerrado h1 { margin: 0; }
+  #panel.cerrado > :not(h1) { display: none; }
   #panel label { display:block; margin: 4px 0; cursor: pointer; }
   #panel select { width: 100%; margin-top: 4px; padding: 4px; }
   .leyenda { margin-top: 10px; font-size: 12px; border-top: 1px solid #ddd; padding-top: 8px; }
@@ -33,7 +38,7 @@
 <div id="mapa"></div>
 <div id="cargando">Cargando…</div>
 <div id="panel">
-  <h1>Capas</h1>
+  <h1><button type="button" id="btn_panel" aria-expanded="true">Capas <span class="flecha">✕</span></button></h1>
   <label><input type="checkbox" id="c_plantas" checked> Plantas SISA</label>
   <label><input type="checkbox" id="c_silos"> Silos / acopio (OSM)</label>
   <label><input type="checkbox" id="c_puertos" checked> Puertos de granos (terminales)</label>
@@ -73,7 +78,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
 <script>
-const mapa = L.map('mapa').setView([-35.5, -60.5], 7);
+const mapa = L.map('mapa', {zoomControl: false}).setView([-35.5, -60.5], 7);
+L.control.zoom({position: 'bottomright'}).addTo(mapa);   // arriba a la izquierda lo tapa el panel de capas
 const baseMapa = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19, attribution: '© OpenStreetMap'
 }).addTo(mapa);
@@ -338,6 +344,18 @@ togglePlantas();
 togglePuertos();
 toggleCampos();
 toggleCaminosU();
+</script>
+<script>
+(function(){
+  const panel = document.getElementById('panel'), btn = document.getElementById('btn_panel');
+  function poner(cerrado){
+    panel.classList.toggle('cerrado', cerrado);
+    btn.setAttribute('aria-expanded', String(!cerrado));
+    btn.querySelector('.flecha').textContent = cerrado ? '☰' : '✕';
+  }
+  btn.addEventListener('click', () => poner(!panel.classList.contains('cerrado')));
+  poner(window.matchMedia('(max-width: 700px)').matches);   // en el celular arranca cerrado
+})();
 </script>
 </body>
 </html>
