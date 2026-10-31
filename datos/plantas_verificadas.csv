@@ -102,3 +102,43 @@ n_planta,lat,lon,nota
 10202,-33.033339,-58.613668,"Entre Ríos Crushing Gualeguaychú (verificada en satélite, aprox.)"
 21584,-34.585651,-61.030794,COFCO Junín (Saforcada) (verificada en satélite)
 21146,-38.57308,-58.71106,"ACA Puerto Quequén, elevador (verificada en satélite, según JULIO)"
+10791,-32.543370,-58.352102,ACA Concepcion Del Uruguay (verificada en satélite)
+12869,-32.186880,-64.106907,ACA Rio Tercero (verificada en satélite)
+20162,-32.186880,-64.106907,ACA Rio Tercero (verificada en satélite)
+24005,-32.186880,-64.106907,ACA Rio Tercero (verificada en satélite)
+16980,-33.542694,-62.801005,ACA Canals (verificada en satélite)
+20111,-31.664836,-63.059964,ACA Sacanta (verificada en satélite)
+512760,-36.163963,-63.503128,ACA Miguel Cane (verificada en satélite)
+20286,-34.125530,-63.370235,ACA Laboulaye (verificada en satélite)
+20986,-31.351484,-63.952878,ACA Monte Cristo (verificada en satélite)
+21107,-31.564889,-63.544313,ACA Villa Del Rosario (verificada en satélite)
+21114,-33.784964,-61.214438,ACA Wheelwright (verificada en satélite)
+21115,-33.642194,-61.862959,ACA Murphy (verificada en satélite)
+22977,-33.642194,-61.862959,ACA Murphy (verificada en satélite)
+208001,-33.642194,-61.862959,ACA Murphy (verificada en satélite)
+21118,-33.799294,-61.340978,ACA Hughes (verificada en satélite)
+21120,-33.118918,-61.717501,ACA San Jose De La Esquina (verificada en satélite)
+21140,-32.353908,-61.345283,ACA San Genaro Norte (verificada en satélite)
+21719,-34.226027,-62.610050,ACA Rufino (verificada en satélite)
+22978,-33.382008,-61.698404,ACA Los Quirquinchos (verificada en satélite)
+23422,-29.781954,-62.040738,ACA Selva (verificada en satélite)
+23539,-33.042857,-58.630092,ACA Gualeguay (verificada en satélite)
+24135,-32.295628,-63.346076,ACA Tio Pujio (verificada en satélite)
+25361,-32.582250,-61.141783,ACA Totoras (verificada en satélite)
+181041,-30.786249,-63.430420,ACA Obispo Trejo (verificada en satélite)
+202401,-33.015211,-61.824861,ACA Cruz Alta (verificada en satélite)
+208002,-26.402257,-61.425355,ACA Los Frentones (verificada en satélite)
+211721,-31.650045,-63.328697,ACA Luque (verificada en satélite)
+211743,-27.694594,-62.444781,ACA Quimili (verificada en satélite)
+300058,-36.174009,-63.952120,"ACA Colonia Baron (verificada en satélite, aprox.)"
+402086,-31.890616,-58.993423,ACA Villaguay (verificada en satélite)
+527021,-34.017879,-63.895550,ACA General Levalle (verificada en satélite)
+530233,-26.895601,-60.914238,"ACA Fortin Las Chuñas (verificada en satélite, aprox.)"
+538384,-26.243287,-61.803936,ACA Pampa De Los Guanacos (verificada en satélite)
+23423,-27.533866,-58.920307,ACA Puerto Vilelas (verificada en satélite)
+20588,-31.626862,-58.499937,"ACA San Salvador (verificada en satélite, aprox.)"
+800167,-33.907142,-60.643223,ACA Pergamino (verificada en satélite)
+21145,-32.73570,-60.72900,"ACA San Lorenzo, terminal portuaria (mismo punto que puertos_granos.csv)"
+21831,-32.73570,-60.72900,"ACA San Lorenzo, terminal portuaria (mismo punto que puertos_granos.csv)"
+23326,-32.73570,-60.72900,"ACA San Lorenzo, terminal portuaria (mismo punto que puertos_granos.csv)"
+524475,-32.61810,-60.76160,"ACA Timbúes, terminal portuaria (mismo punto que puertos_granos.csv)"
