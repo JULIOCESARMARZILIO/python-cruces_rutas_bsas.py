@@ -58,4 +58,12 @@ cd "$DIR_SALIDA"
 } > index.html
 echo "Resultados publicados"
 cd /app 2>/dev/null || cd "$(dirname "$0")"
+# caminos con agua (radar Sentinel-1) y satélite reciente, en segundo plano cada 12 h
+# (imágenes gratis de Planetary Computer, sin clave). ANEGADOS=0 lo apaga.
+if [ "$ANEGADOS" != "0" ]; then
+  ( while true; do
+      python caminos_anegados.py 25_de_mayo || echo "caminos_anegados.py terminó con error (se sigue igual)"
+      sleep 43200
+    done ) &
+fi
 exec python servidor.py

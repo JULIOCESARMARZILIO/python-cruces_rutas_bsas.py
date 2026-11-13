@@ -181,6 +181,8 @@ async function calcular(){
       L.polyline(p.coords, { color:'#b02a00', weight:5, opacity:.85 }).addTo(lineas);
     html += '<div class="total">'+fmt(r.km_total)+' <small>km por camino</small></div>';
     html += '<div class="sub">Ida y vuelta: '+fmt(r.km_total*2)+' km · camión ≈ '+horas(r.horas)+' (solo ida)</div>';
+    if (r.km_con_agua > 0) html += '<div class="sub" style="color:#c00"><b>⚠ Pasa por '+fmt(r.km_con_agua)
+      +' km de camino con agua</b> según el último radar: no había otra salida razonable.</div>';
     if (r.piernas.length > 1)
       r.piernas.forEach((p,i) => html += '<div class="fila"><span>'+letra(i)+' → '+letra(i+1)+'</span><span>'+fmt(p.km)+' km</span></div>');
     const recta = r.piernas.reduce((a,p) => a + p.km_recta, 0);
