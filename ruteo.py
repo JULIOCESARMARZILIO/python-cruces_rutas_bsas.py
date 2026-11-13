@@ -41,6 +41,10 @@ VEL = {"tierra": 35.0, "pavimento": 70.0, "marcado": 30.0, "calle": 30.0}
 # Categoría del catastro según el ancho de la franja (caminos_catastro.py); los caminos de
 # tierra del OSM no traen categoría.
 PESO = {"principal": 1.0, "secundario": 1.5, "vecinal": 3.0, "tierra_osm": 1.3}
+# Tramos con agua según el radar (caminos_anegados.py): cada km "pesa" 25 veces más, así el
+# camino más corto los evita si hay otra salida razonable; si no la hay, pasa igual y lo avisa.
+PESO_AGUA = 25.0
+CERCA_AGUA_KM = 0.04
 
 
 def hav_km(lon1, lat1, lon2, lat2):
@@ -87,6 +91,7 @@ class Red:
         self.ady = []        # i -> [(j, km, tipo, nombre, peso)]
         self.grilla = {}     # (cx, cy) -> [i]
         self.fuentes = {}
+        self.mojadas = {}  # (a, b) con a < b -> km de esa arista que están con agua
 
     def nodo(self, lon, lat):
         k = (round(lon, 6), round(lat, 6))
@@ -231,9 +236,13 @@ def _archivos():
     return fs + [os.path.join(DIR_SALIDA, "red_rutas.json")]
 
 
+def _archivos_agua():
+    return sorted(glob.glob(os.path.join(DIR_SALIDA, "anegados_*.geojson")))
+
+
 def _firma():
     out = []
-    for p in _archivos():
+    for p in _archivos() + _archivos_agua():
         try:
             st = os.stat(p)
             out.append((p, st.st_mtime, st.st_size))
@@ -309,7 +318,53 @@ def construir():
             if i is not None and i not in propios:
                 red.arista(red.idx[(round(c[0], 6), round(c[1], 6))], i, tipo, nombre, peso=peso)
     red.indexar()
+    red.fuentes["tramos_con_agua"] = marcar_agua(red)
     return red
+
+
+def marcar_agua(red):
+    """Sube el peso de las aristas que pasan a menos de CERCA_AGUA_KM de un tramo con agua."""
+    pts = []
+    for p in _archivos_agua():
+        for f in (_cargar_json(p) or {}).get("features", []):
+            g = f.get("geometry") or {}
+            if g.get("type") == "LineString":
+                pts.extend(g["coordinates"])
+    if not pts:
+        return 0
+    celdas = {}
+    for lon, lat in pts:
+        celdas.setdefault((int(math.floor(lon / CELDA)), int(math.floor(lat / CELDA))), []).append((lon, lat))
+
+    def cerca(lon, lat):
+        cx, cy = int(math.floor(lon / CELDA)), int(math.floor(lat / CELDA))
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for lo, la in celdas.get((cx + dx, cy + dy), ()):
+                    if abs(lo - lon) < 0.001 and abs(la - lat) < 0.001 and hav_km(lo, la, lon, lat) <= CERCA_AGUA_KM:
+                        return True
+        return False
+
+    for a, ady in enumerate(red.ady):
+        lo1, la1 = red.lonlat[a]
+        for k, (b, km, tipo, nombre, peso) in enumerate(ady):
+            if tipo == "pavimento":
+                continue
+            par = (min(a, b), max(a, b))
+            if par not in red.mojadas:
+                (lo2, la2) = red.lonlat[b]
+                # la arista solo puede tocar el agua si alguna de sus celdas tiene puntos mojados
+                c1 = (int(math.floor(lo1 / CELDA)), int(math.floor(la1 / CELDA)))
+                c2 = (int(math.floor(lo2 / CELDA)), int(math.floor(la2 / CELDA)))
+                if not any((c[0] + dx, c[1] + dy) in celdas for c in (c1, c2) for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                    continue
+                n = max(1, int(km / 0.02))
+                mojados = sum(cerca(lo1 + (lo2 - lo1) * i / n, la1 + (la2 - la1) * i / n) for i in range(n + 1))
+                if not mojados:
+                    continue
+                red.mojadas[par] = min(km, mojados * km / n)
+            ady[k] = (b, km, tipo, nombre, peso * PESO_AGUA)
+    return len(red.mojadas)
 
 
 _RED, _FIRMA = None, None
@@ -348,7 +403,7 @@ def ruta(puntos):
                                           f"{MAX_ENGANCHE_KM:.0f} km de cualquier camino cargado"}
         enganches.append((i, km))
     piernas = []
-    tot = {"km_total": 0.0, "km_acceso": 0.0, "horas": 0.0}
+    tot = {"km_total": 0.0, "km_acceso": 0.0, "horas": 0.0, "km_con_agua": 0.0}
     por_tipo = {}
     for (lat1, lon1), (lat2, lon2), (s, ks), (t, kt) in zip(puntos, puntos[1:], enganches, enganches[1:]):
         r = red.astar(s, t)
@@ -358,7 +413,9 @@ def ruta(puntos):
         coords = [[lon1, lat1], list(red.lonlat[s])]
         tipos = {}
         calles = []   # nombres de vías recorridas, en orden, sin repetir seguidas
+        km_agua = 0.0
         for u, v, km, tipo, nombre in tramos:
+            km_agua += red.mojadas.get((min(u, v), max(u, v)), 0.0)
             coords.append(list(red.lonlat[v]))
             tipos[tipo] = tipos.get(tipo, 0.0) + km
             nombre = nombre or SIN_NOMBRE.get(tipo, tipo)
@@ -386,17 +443,18 @@ def ruta(puntos):
             "km_acceso_origen": round(ks, 3), "km_acceso_destino": round(kt, 3),
             "km_recta": round(hav_km(lon1, lat1, lon2, lat2), 2),
             "por_tipo": {k: round(v, 2) for k, v in tipos.items() if v > 0.005},
-            "horas": round(horas, 2), "vias": resumen,
+            "horas": round(horas, 2), "vias": resumen, "km_con_agua": round(km_agua, 2),
             "coords": [[round(c[1], 6), round(c[0], 6)] for c in _simplificar(coords)],
         })
         tot["km_total"] += km_red + acceso
         tot["km_acceso"] += acceso
         tot["horas"] += horas
+        tot["km_con_agua"] += km_agua
         for k, v in tipos.items():
             por_tipo[k] = por_tipo.get(k, 0.0) + v
     return {"ok": True, "fuente": "red propia (OSM + catastro + caminos marcados)",
             "km_total": round(tot["km_total"], 2), "km_acceso": round(tot["km_acceso"], 3),
-            "horas": round(tot["horas"], 2),
+            "horas": round(tot["horas"], 2), "km_con_agua": round(tot["km_con_agua"], 2),
             "por_tipo": {k: round(v, 2) for k, v in por_tipo.items() if v > 0.005},
             "piernas": piernas}
 
